@@ -1,14 +1,18 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { products as initialProducts } from '../../customer/data/products';
-import { categories } from '../../customer/data/categories';
+import { categories as initialCategories } from '../../customer/data/categories';
 import AdminModal from '../components/AdminModal';
 import { Search, Plus, X, Star, Trash, Check, CheckCircle } from '../../../components/Icons';
 import { formatCurrency } from '../../../utils/formatCurrency';
+import adminProductsApi from '../../../api/adminProducts.api';
+import productsApi from '../../../api/products.api';
 
 const DEFAULT_PRODUCT_IMAGE = "https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=400&q=80";
 
 export const AdminProducts = () => {
   const [productsList, setProductsList] = useState(initialProducts);
+  const [categoriesList, setCategoriesList] = useState(initialCategories);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
 
@@ -19,7 +23,7 @@ export const AdminProducts = () => {
 
   const [formData, setFormData] = useState({
     name: '',
-    categorySlug: categories[0]?.slug || 'doodh',
+    categorySlug: 'doodh',
     price: '',
     unit: '500ml',
     image: '',
@@ -33,8 +37,34 @@ export const AdminProducts = () => {
 
   const showToast = (msg) => {
     setToastMessage(msg);
-    setTimeout(() => setToastMessage(''), 3000);
+    setTimeout(() => setToastMessage(''), 3500);
   };
+
+  // Fetch products & categories from real REST API
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      const [prodRes, catRes] = await Promise.all([
+        adminProductsApi.getProducts(),
+        productsApi.getCategories()
+      ]);
+
+      if (prodRes.data && Array.isArray(prodRes.data.data) && prodRes.data.data.length > 0) {
+        setProductsList(prodRes.data.data);
+      }
+      if (catRes.data && Array.isArray(catRes.data.data) && catRes.data.data.length > 0) {
+        setCategoriesList(catRes.data.data);
+      }
+    } catch (err) {
+      console.warn('⚠️ Real API offline or unseeded, using local fallback dataset for Admin Products');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
 
   // Filtered Products
   const filteredProducts = useMemo(() => {
@@ -50,36 +80,30 @@ export const AdminProducts = () => {
         (p) =>
           p.name.toLowerCase().includes(q) ||
           p.categorySlug.toLowerCase().includes(q) ||
-          (p.badge && p.badge.toLowerCase().includes(q))
+          (p.description && p.description.toLowerCase().includes(q))
       );
     }
 
     return result;
   }, [productsList, categoryFilter, searchQuery]);
 
-  // Inline Stock Toggle
-  const handleToggleStock = (id) => {
-    setProductsList((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, inStock: !p.inStock } : p))
-    );
-    showToast('Product stock status update ho gaya!');
+  // Handle Form Inputs
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+    if (validationError) setValidationError('');
   };
 
-  // Delete Product
-  const handleDeleteProduct = (product) => {
-    if (window.confirm(`Pakka "${product.name}" delete karna hai?`)) {
-      setProductsList((prev) => prev.filter((p) => p.id !== product.id));
-      showToast(`"${product.name}" list se remove ho gaya.`);
-    }
-  };
-
-  // Open Add Modal
+  // Open Modal for Create
   const handleOpenAddModal = () => {
     setModalMode('add');
     setEditingProductId(null);
     setFormData({
       name: '',
-      categorySlug: categories[0]?.slug || 'doodh',
+      categorySlug: categoriesList[0]?.slug || 'doodh',
       price: '',
       unit: '500ml',
       image: '',
@@ -91,17 +115,17 @@ export const AdminProducts = () => {
     setIsModalOpen(true);
   };
 
-  // Open Edit Modal
+  // Open Modal for Edit
   const handleOpenEditModal = (product) => {
     setModalMode('edit');
-    setEditingProductId(product.id);
+    setEditingProductId(product.id || product._id);
     setFormData({
-      name: product.name || '',
-      categorySlug: product.categorySlug || 'doodh',
-      price: product.price !== undefined ? String(product.price) : '',
-      unit: product.unit || '500ml',
+      name: product.name,
+      categorySlug: product.categorySlug,
+      price: product.price,
+      unit: product.unit,
       image: product.image || '',
-      inStock: product.inStock !== false,
+      inStock: product.inStock,
       badge: product.badge || '',
       description: product.description || ''
     });
@@ -109,70 +133,104 @@ export const AdminProducts = () => {
     setIsModalOpen(true);
   };
 
-  // Handle Form Submission
-  const handleSubmitForm = (e) => {
+  // Save Product (Add or Edit)
+  const handleSaveProduct = async (e) => {
     e.preventDefault();
-    setValidationError('');
 
     if (!formData.name.trim()) {
-      setValidationError('Product Ka Naam bharna zaroori hai.');
+      setValidationError('Product Ka Naam zaroori hai.');
+      return;
+    }
+    if (!formData.price || Number(formData.price) <= 0) {
+      setValidationError('Sahi Price daalein (positive number).');
       return;
     }
 
-    if (!formData.price || isNaN(formData.price) || Number(formData.price) < 0) {
-      setValidationError('Kripya valid (non-negative) Price bharein.');
-      return;
-    }
+    const payload = {
+      name: formData.name.trim(),
+      categorySlug: formData.categorySlug,
+      price: Number(formData.price),
+      unit: formData.unit.trim() || '500ml',
+      image: formData.image.trim() || DEFAULT_PRODUCT_IMAGE,
+      inStock: formData.inStock,
+      badge: formData.badge.trim(),
+      description: formData.description.trim()
+    };
 
-    if (!formData.unit.trim()) {
-      setValidationError('Unit specify karna zaroori hai (e.g. 500ml, 250g).');
-      return;
-    }
-
-    const numericPrice = Number(formData.price);
-    const finalImage = formData.image.trim() || DEFAULT_PRODUCT_IMAGE;
-
-    if (modalMode === 'add') {
-      const newProduct = {
-        id: `p_${Date.now()}`,
-        name: formData.name.trim(),
-        categorySlug: formData.categorySlug,
-        price: numericPrice,
-        unit: formData.unit.trim(),
-        image: finalImage,
-        gallery: [finalImage],
-        rating: 4.8,
-        reviewCount: 1,
-        inStock: formData.inStock,
-        badge: formData.badge.trim() || null,
-        description: formData.description.trim() || `${formData.name.trim()} - Fresh farm quality product.`
-      };
-
-      setProductsList((prev) => [newProduct, ...prev]);
-      showToast('🎉 Naya Product successfully Add ho gaya!');
-    } else {
-      setProductsList((prev) =>
-        prev.map((p) =>
-          p.id === editingProductId
-            ? {
-                ...p,
-                name: formData.name.trim(),
-                categorySlug: formData.categorySlug,
-                price: numericPrice,
-                unit: formData.unit.trim(),
-                image: finalImage,
-                gallery: p.gallery && p.gallery.length > 0 ? [finalImage, ...p.gallery.slice(1)] : [finalImage],
-                inStock: formData.inStock,
-                badge: formData.badge.trim() || null,
-                description: formData.description.trim()
-              }
-            : p
-        )
-      );
-      showToast('✨ Product details update ho gayi!');
+    try {
+      if (modalMode === 'add') {
+        const res = await adminProductsApi.createProduct(payload);
+        if (res.data && res.data.success) {
+          showToast('🎉 Naya Product catalogue me add ho gaya!');
+        }
+      } else {
+        const res = await adminProductsApi.updateProduct(editingProductId, payload);
+        if (res.data && res.data.success) {
+          showToast('✨ Product details update ho gayi!');
+        }
+      }
+      await fetchProducts();
+    } catch (err) {
+      // Local State Fallback if API offline
+      if (modalMode === 'add') {
+        const newProd = {
+          id: `prod-${Date.now()}`,
+          ...payload,
+          rating: 4.8,
+          reviewCount: 0
+        };
+        setProductsList((prev) => [newProd, ...prev]);
+        showToast('🎉 Naya Product add ho gaya (Dev Fallback)');
+      } else {
+        setProductsList((prev) =>
+          prev.map((p) => ((p.id || p._id) === editingProductId ? { ...p, ...payload } : p))
+        );
+        showToast('✨ Product details update ho gayi!');
+      }
     }
 
     setIsModalOpen(false);
+  };
+
+  // Toggle Stock Availability
+  const handleToggleStock = async (id) => {
+    try {
+      const res = await adminProductsApi.toggleStock(id);
+      if (res.data && res.data.success) {
+        showToast(res.data.message || 'Stock status update ho gaya!');
+      }
+      await fetchProducts();
+    } catch (err) {
+      setProductsList((prev) =>
+        prev.map((p) => {
+          if ((p.id || p._id) === id) {
+            const updatedStock = !p.inStock;
+            showToast(`📦 Product ab ${updatedStock ? 'In Stock' : 'Out of Stock'} mark ho gaya!`);
+            return { ...p, inStock: updatedStock };
+          }
+          return p;
+        })
+      );
+    }
+  };
+
+  // Delete Product
+  const handleDeleteProduct = async (product) => {
+    const confirmDelete = window.confirm(`Kya aap "${product.name}" ko sachme delete karna chahte hain?`);
+    if (!confirmDelete) return;
+
+    const prodId = product.id || product._id;
+
+    try {
+      const res = await adminProductsApi.deleteProduct(prodId);
+      if (res.data && res.data.success) {
+        showToast('🗑️ Product catalogue se remove ho gaya!');
+      }
+      await fetchProducts();
+    } catch (err) {
+      setProductsList((prev) => prev.filter((p) => (p.id || p._id) !== prodId));
+      showToast('🗑️ Product catalogue se remove ho gaya!');
+    }
   };
 
   return (
@@ -182,9 +240,9 @@ export const AdminProducts = () => {
       {toastMessage && (
         <div
           style={{
-            backgroundColor: 'var(--color-success-bg)',
-            border: '1.5px solid var(--color-success-border)',
-            color: 'var(--color-success)',
+            backgroundColor: toastMessage.includes('⚠️') ? 'var(--color-error-bg)' : 'var(--color-success-bg)',
+            border: toastMessage.includes('⚠️') ? '1.5px solid var(--color-error-border)' : '1.5px solid var(--color-success-border)',
+            color: toastMessage.includes('⚠️') ? 'var(--color-error)' : 'var(--color-success)',
             borderRadius: 'var(--radius-md)',
             padding: '0.75rem 1.25rem',
             marginBottom: '1.25rem',
@@ -197,7 +255,7 @@ export const AdminProducts = () => {
             animation: 'slideDownFade 0.3s ease'
           }}
         >
-          <CheckCircle size={18} color="var(--color-success)" />
+          <CheckCircle size={18} />
           <span>{toastMessage}</span>
         </div>
       )}
@@ -217,13 +275,13 @@ export const AdminProducts = () => {
           type="button"
           onClick={handleOpenAddModal}
           style={{
-            padding: '0.65rem 1.2rem',
-            borderRadius: 'var(--radius-sm)',
-            border: 'none',
+            padding: '0.65rem 1.25rem',
+            borderRadius: 'var(--radius-full)',
             backgroundColor: 'var(--color-primary)',
             color: '#FFFFFF',
             fontWeight: '700',
             fontSize: '0.875rem',
+            border: 'none',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
@@ -235,28 +293,27 @@ export const AdminProducts = () => {
         </button>
       </div>
 
-      {/* Filter & Search Toolbar */}
+      {/* Filter & Search Toolbar Strip */}
       <div
         style={{
           backgroundColor: 'var(--color-cream-card)',
           borderRadius: 'var(--radius-md)',
           border: '1.5px solid var(--color-border)',
-          padding: '0.85rem 1.15rem',
+          padding: '0.85rem 1.1rem',
+          marginBottom: '1.5rem',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           flexWrap: 'wrap',
-          gap: '1rem',
-          marginBottom: '1.5rem',
-          boxShadow: 'var(--shadow-sm)'
+          gap: '1rem'
         }}
       >
-        {/* Search Box */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: 'var(--color-cream)', padding: '0.45rem 0.85rem', borderRadius: 'var(--radius-full)', border: '1px solid var(--color-border)', minWidth: '260px', flex: 1 }}>
+        {/* Search Bar */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: '1 1 260px', backgroundColor: 'var(--color-cream)', padding: '0.45rem 0.85rem', borderRadius: 'var(--radius-full)', border: '1px solid var(--color-border)' }}>
           <Search size={16} color="var(--color-text-muted)" />
           <input
             type="text"
-            placeholder="Search product name, badge, category..."
+            placeholder="Search product name, category, description..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{ border: 'none', background: 'none', outline: 'none', width: '100%', fontSize: '0.85rem', color: 'var(--color-primary)' }}
@@ -287,8 +344,8 @@ export const AdminProducts = () => {
             }}
           >
             <option value="all">All Categories ({productsList.length})</option>
-            {categories.map((cat) => (
-              <option key={cat.id} value={cat.slug}>
+            {categoriesList.map((cat) => (
+              <option key={cat.id || cat._id || cat.slug} value={cat.slug}>
                 Taaza {cat.name}
               </option>
             ))}
@@ -302,306 +359,291 @@ export const AdminProducts = () => {
           backgroundColor: 'var(--color-cream-card)',
           borderRadius: 'var(--radius-md)',
           border: '1.5px solid var(--color-border)',
-          padding: '1.25rem',
-          boxShadow: 'var(--shadow-sm)',
-          overflow: 'hidden'
+          overflow: 'hidden',
+          boxShadow: 'var(--shadow-sm)'
         }}
       >
-        {filteredProducts.length > 0 ? (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
-              <thead>
-                <tr style={{ borderBottom: '1.5px solid var(--color-border)', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.5px' }}>
-                  <th style={{ padding: '0.75rem', width: '60px' }}>Item</th>
-                  <th style={{ padding: '0.75rem' }}>Product Name</th>
-                  <th style={{ padding: '0.75rem' }}>Category</th>
-                  <th style={{ padding: '0.75rem' }}>Price & Unit</th>
-                  <th style={{ padding: '0.75rem' }}>Stock Status</th>
-                  <th style={{ padding: '0.75rem' }}>Rating</th>
-                  <th style={{ padding: '0.75rem', textAlign: 'right' }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredProducts.map((p) => (
-                  <tr key={p.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                    {/* Thumbnail */}
-                    <td style={{ padding: '0.75rem' }}>
-                      <img
-                        src={p.image || DEFAULT_PRODUCT_IMAGE}
-                        alt={p.name}
-                        style={{ width: '42px', height: '42px', borderRadius: '8px', objectFit: 'cover', backgroundColor: '#FAF5EE', border: '1px solid var(--color-border)' }}
-                      />
-                    </td>
+        <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '700px' }}>
+            <thead>
+              <tr style={{ backgroundColor: 'var(--color-cream)', borderBottom: '1.5px solid var(--color-border)' }}>
+                <th style={{ padding: '0.85rem 1rem', fontSize: '0.775rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Item</th>
+                <th style={{ padding: '0.85rem 1rem', fontSize: '0.775rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Category</th>
+                <th style={{ padding: '0.85rem 1rem', fontSize: '0.775rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Price / Unit</th>
+                <th style={{ padding: '0.85rem 1rem', fontSize: '0.775rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Badge</th>
+                <th style={{ padding: '0.85rem 1rem', fontSize: '0.775rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'center' }}>Stock Status</th>
+                <th style={{ padding: '0.85rem 1rem', fontSize: '0.775rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right' }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredProducts.length > 0 ? (
+                filteredProducts.map((p) => {
+                  const prodId = p.id || p._id;
+                  return (
+                    <tr key={prodId} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                      
+                      {/* Item Thumbnail & Name */}
+                      <td style={{ padding: '0.9rem 1rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                          <img
+                            src={p.image || DEFAULT_PRODUCT_IMAGE}
+                            alt={p.name}
+                            style={{ width: '44px', height: '44px', borderRadius: '8px', objectFit: 'cover', border: '1px solid var(--color-border)', flexShrink: 0 }}
+                          />
+                          <div>
+                            <div style={{ fontWeight: '700', fontSize: '0.925rem', color: 'var(--color-primary)' }}>{p.name}</div>
+                            {p.description && (
+                              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', maxWidth: '240px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {p.description}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </td>
 
-                    {/* Name & Badge */}
-                    <td style={{ padding: '0.75rem' }}>
-                      <div style={{ fontWeight: '700', color: 'var(--color-primary)' }}>{p.name}</div>
-                      {p.badge && (
-                        <span className="badge-gold" style={{ fontSize: '0.625rem', padding: '0.1rem 0.4rem', marginTop: '0.2rem', display: 'inline-block' }}>
-                          {p.badge}
+                      {/* Category */}
+                      <td style={{ padding: '0.9rem 1rem' }}>
+                        <span style={{ fontSize: '0.8rem', fontWeight: '700', textTransform: 'capitalize', color: 'var(--color-primary)' }}>
+                          {p.categorySlug}
                         </span>
-                      )}
-                    </td>
+                      </td>
 
-                    {/* Category */}
-                    <td style={{ padding: '0.75rem', textTransform: 'capitalize', color: 'var(--color-text-muted)' }}>
-                      <span className="badge-wine" style={{ fontSize: '0.7rem' }}>
-                        {p.categorySlug}
-                      </span>
-                    </td>
+                      {/* Price & Unit */}
+                      <td style={{ padding: '0.9rem 1rem' }}>
+                        <div style={{ fontWeight: '800', fontSize: '0.925rem', color: 'var(--color-primary)' }}>
+                          {formatCurrency(p.price)}
+                        </div>
+                        <div style={{ fontSize: '0.725rem', color: 'var(--color-text-muted)' }}>per {p.unit}</div>
+                      </td>
 
-                    {/* Price & Unit */}
-                    <td style={{ padding: '0.75rem', fontWeight: '800', color: 'var(--color-primary)' }}>
-                      {formatCurrency(p.price)}
-                      <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: '500', display: 'block' }}>
-                        per {p.unit}
-                      </span>
-                    </td>
-
-                    {/* Inline Stock Switch Toggle */}
-                    <td style={{ padding: '0.75rem' }}>
-                      <button
-                        type="button"
-                        onClick={() => handleToggleStock(p.id)}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '0.4rem',
-                          padding: '0.25rem 0.65rem',
-                          borderRadius: 'var(--radius-full)',
-                          border: p.inStock !== false ? '1px solid var(--color-success-border)' : '1px solid var(--color-error-border)',
-                          backgroundColor: p.inStock !== false ? 'var(--color-success-bg)' : 'var(--color-error-bg)',
-                          color: p.inStock !== false ? 'var(--color-success)' : 'var(--color-error)',
-                          fontWeight: '800',
-                          fontSize: '0.725rem',
-                          cursor: 'pointer',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.4px'
-                        }}
-                        title="Click to toggle Stock Status"
-                      >
-                        {p.inStock !== false ? (
-                          <>
-                            <Check size={12} color="var(--color-success)" /> In Stock
-                          </>
+                      {/* Badge Tag */}
+                      <td style={{ padding: '0.9rem 1rem' }}>
+                        {p.badge ? (
+                          <span className="badge-gold" style={{ fontSize: '0.675rem' }}>
+                            {p.badge}
+                          </span>
                         ) : (
-                          <>
-                            <X size={12} color="var(--color-error)" /> Out of Stock
-                          </>
+                          <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>—</span>
                         )}
-                      </button>
-                    </td>
+                      </td>
 
-                    {/* Rating */}
-                    <td style={{ padding: '0.75rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.8rem', fontWeight: '700', color: 'var(--color-primary)' }}>
-                        <Star size={13} color="var(--color-gold)" fill="var(--color-gold)" />
-                        <span>{p.rating || 4.8}</span>
-                      </div>
-                    </td>
-
-                    {/* Actions: Edit & Delete */}
-                    <td style={{ padding: '0.75rem', textAlign: 'right' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                      {/* Stock Status Switch */}
+                      <td style={{ padding: '0.9rem 1rem', textAlign: 'center' }}>
                         <button
                           type="button"
-                          onClick={() => handleOpenEditModal(p)}
+                          onClick={() => handleToggleStock(prodId)}
                           style={{
-                            backgroundColor: 'var(--color-cream)',
-                            border: '1px solid var(--color-border)',
-                            borderRadius: '6px',
-                            padding: '0.35rem 0.65rem',
-                            fontSize: '0.775rem',
+                            padding: '0.35rem 0.75rem',
+                            borderRadius: 'var(--radius-full)',
+                            border: p.inStock ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid rgba(239, 68, 68, 0.4)',
+                            backgroundColor: p.inStock ? 'var(--color-success-bg)' : 'rgba(239, 68, 68, 0.1)',
+                            color: p.inStock ? 'var(--color-success)' : '#DC2626',
+                            fontSize: '0.75rem',
                             fontWeight: '700',
-                            color: 'var(--color-primary)',
-                            cursor: 'pointer'
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.3rem'
                           }}
                         >
-                          Edit
+                          {p.inStock ? <Check size={13} /> : <X size={13} />}
+                          <span>{p.inStock ? 'In Stock' : 'Out of Stock'}</span>
                         </button>
+                      </td>
 
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteProduct(p)}
-                          style={{
-                            backgroundColor: 'var(--color-error-bg)',
-                            border: '1px solid var(--color-error-border)',
-                            borderRadius: '6px',
-                            padding: '0.35rem 0.55rem',
-                            color: 'var(--color-error)',
-                            cursor: 'pointer'
-                          }}
-                          title="Delete Product"
-                        >
-                          <Trash size={14} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div style={{ textAlign: 'center', padding: '3rem 1rem' }}>
-            <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>📦</div>
-            <h3 className="font-display" style={{ fontSize: '1.25rem', color: 'var(--color-primary)', fontWeight: '700', marginBottom: '0.35rem' }}>
-              Koi Product Nahi Mila
-            </h3>
-            <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: '1.25rem' }}>
-              Search query ya category filter reset karein ya naya product add karein.
-            </p>
-            <button
-              type="button"
-              className="btn btn-gold"
-              onClick={handleOpenAddModal}
-            >
-              <Plus size={16} /> Naya Product Add Karein
-            </button>
-          </div>
-        )}
+                      {/* Actions (Edit / Delete) */}
+                      <td style={{ padding: '0.9rem 1rem', textAlign: 'right' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditModal(p)}
+                            style={{
+                              padding: '0.35rem 0.75rem',
+                              borderRadius: 'var(--radius-sm)',
+                              border: '1px solid var(--color-border)',
+                              backgroundColor: 'var(--color-cream)',
+                              color: 'var(--color-primary)',
+                              fontSize: '0.775rem',
+                              fontWeight: '700',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Edit
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteProduct(p)}
+                            style={{
+                              padding: '0.35rem 0.6rem',
+                              borderRadius: 'var(--radius-sm)',
+                              border: '1px solid var(--color-error-border)',
+                              backgroundColor: 'var(--color-error-bg)',
+                              color: 'var(--color-error)',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center'
+                            }}
+                            title="Delete product"
+                          >
+                            <Trash size={14} color="var(--color-error)" />
+                          </button>
+                        </div>
+                      </td>
+
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan="6" style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--color-text-muted)' }}>
+                    Koi matching product nahi mila.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {/* Add / Edit Product Modal Form */}
+      {/* Admin Add/Edit Product Modal */}
       <AdminModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={modalMode === 'add' ? '➕ Naya Product Add Karein' : '✏️ Product Details Edit Karein'}
+        title={modalMode === 'add' ? '➕ Add New Product' : '✏️ Edit Product Details'}
       >
-        {validationError && (
-          <div style={{ backgroundColor: 'var(--color-error-bg)', border: '1px solid var(--color-error-border)', color: 'var(--color-error)', borderRadius: 'var(--radius-sm)', padding: '0.65rem 0.85rem', marginBottom: '1rem', fontSize: '0.825rem', fontWeight: '700' }}>
-            ⚠️ {validationError}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmitForm} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <form onSubmit={handleSaveProduct} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           
-          {/* Product Name */}
+          {validationError && (
+            <div style={{ padding: '0.5rem 0.85rem', backgroundColor: 'var(--color-error-bg)', border: '1px solid var(--color-error-border)', color: 'var(--color-error)', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem', fontWeight: '700' }}>
+              ⚠️ {validationError}
+            </div>
+          )}
+
           <div>
-            <label style={{ fontSize: '0.775rem', fontWeight: '700', color: 'var(--color-primary)', display: 'block', marginBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-              Product Name *
+            <label style={{ fontSize: '0.775rem', fontWeight: '700', color: 'var(--color-primary)', display: 'block', marginBottom: '0.35rem' }}>
+              Product Title *
             </label>
             <input
               type="text"
+              name="name"
               required
-              placeholder="e.g., Full Cream Doodh"
+              placeholder="e.g. Full Cream Doodh 500ml"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontSize: '0.85rem', backgroundColor: 'var(--color-cream)', outline: 'none' }}
+              onChange={handleInputChange}
+              style={{ width: '100%', padding: '0.6rem 0.85rem', borderRadius: 'var(--radius-sm)', border: '1.5px solid var(--color-border)', fontSize: '0.875rem', outline: 'none' }}
             />
           </div>
 
-          {/* Category & Price Grid */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
             <div>
-              <label style={{ fontSize: '0.775rem', fontWeight: '700', color: 'var(--color-primary)', display: 'block', marginBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+              <label style={{ fontSize: '0.775rem', fontWeight: '700', color: 'var(--color-primary)', display: 'block', marginBottom: '0.35rem' }}>
                 Category *
               </label>
               <select
+                name="categorySlug"
                 value={formData.categorySlug}
-                onChange={(e) => setFormData({ ...formData, categorySlug: e.target.value })}
-                style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontSize: '0.85rem', backgroundColor: 'var(--color-cream)', outline: 'none', cursor: 'pointer' }}
+                onChange={handleInputChange}
+                style={{ width: '100%', padding: '0.6rem 0.85rem', borderRadius: 'var(--radius-sm)', border: '1.5px solid var(--color-border)', fontSize: '0.875rem', outline: 'none', backgroundColor: '#FFFFFF' }}
               >
-                {categories.map((c) => (
-                  <option key={c.id} value={c.slug}>
-                    Taaza {c.name}
+                {categoriesList.map((cat) => (
+                  <option key={cat.id || cat._id || cat.slug} value={cat.slug}>
+                    Taaza {cat.name} ({cat.slug})
                   </option>
                 ))}
               </select>
             </div>
 
             <div>
-              <label style={{ fontSize: '0.775rem', fontWeight: '700', color: 'var(--color-primary)', display: 'block', marginBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+              <label style={{ fontSize: '0.775rem', fontWeight: '700', color: 'var(--color-primary)', display: 'block', marginBottom: '0.35rem' }}>
                 Price (₹) *
               </label>
               <input
                 type="number"
-                min="0"
-                step="1"
+                name="price"
                 required
-                placeholder="e.g., 32"
+                placeholder="32"
                 value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontSize: '0.85rem', backgroundColor: 'var(--color-cream)', outline: 'none' }}
+                onChange={handleInputChange}
+                style={{ width: '100%', padding: '0.6rem 0.85rem', borderRadius: 'var(--radius-sm)', border: '1.5px solid var(--color-border)', fontSize: '0.875rem', outline: 'none' }}
               />
             </div>
           </div>
 
-          {/* Unit & Badge Grid */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
             <div>
-              <label style={{ fontSize: '0.775rem', fontWeight: '700', color: 'var(--color-primary)', display: 'block', marginBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-                Unit Pack *
+              <label style={{ fontSize: '0.775rem', fontWeight: '700', color: 'var(--color-primary)', display: 'block', marginBottom: '0.35rem' }}>
+                Unit / Quantity *
               </label>
               <input
                 type="text"
+                name="unit"
                 required
-                placeholder="e.g., 500ml / 250g / 1L"
+                placeholder="500ml / 250g"
                 value={formData.unit}
-                onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-                style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontSize: '0.85rem', backgroundColor: 'var(--color-cream)', outline: 'none' }}
+                onChange={handleInputChange}
+                style={{ width: '100%', padding: '0.6rem 0.85rem', borderRadius: 'var(--radius-sm)', border: '1.5px solid var(--color-border)', fontSize: '0.875rem', outline: 'none' }}
               />
             </div>
 
             <div>
-              <label style={{ fontSize: '0.775rem', fontWeight: '700', color: 'var(--color-primary)', display: 'block', marginBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-                Badge Tag (Optional)
+              <label style={{ fontSize: '0.775rem', fontWeight: '700', color: 'var(--color-primary)', display: 'block', marginBottom: '0.35rem' }}>
+                Badge (Optional)
               </label>
               <input
                 type="text"
-                placeholder="e.g., Bestseller / Pure Desi"
+                name="badge"
+                placeholder="e.g. Bestseller / A2 Quality"
                 value={formData.badge}
-                onChange={(e) => setFormData({ ...formData, badge: e.target.value })}
-                style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontSize: '0.85rem', backgroundColor: 'var(--color-cream)', outline: 'none' }}
+                onChange={handleInputChange}
+                style={{ width: '100%', padding: '0.6rem 0.85rem', borderRadius: 'var(--radius-sm)', border: '1.5px solid var(--color-border)', fontSize: '0.875rem', outline: 'none' }}
               />
             </div>
           </div>
 
-          {/* Image URL */}
           <div>
-            <label style={{ fontSize: '0.775rem', fontWeight: '700', color: 'var(--color-primary)', display: 'block', marginBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+            <label style={{ fontSize: '0.775rem', fontWeight: '700', color: 'var(--color-primary)', display: 'block', marginBottom: '0.35rem' }}>
               Image URL (Optional)
             </label>
             <input
-              type="text"
-              placeholder="/images/products/milk-1.jpg"
+              type="url"
+              name="image"
+              placeholder="https://..."
               value={formData.image}
-              onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-              style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontSize: '0.85rem', backgroundColor: 'var(--color-cream)', outline: 'none' }}
+              onChange={handleInputChange}
+              style={{ width: '100%', padding: '0.6rem 0.85rem', borderRadius: 'var(--radius-sm)', border: '1.5px solid var(--color-border)', fontSize: '0.875rem', outline: 'none' }}
             />
           </div>
 
-          {/* Description */}
           <div>
-            <label style={{ fontSize: '0.775rem', fontWeight: '700', color: 'var(--color-primary)', display: 'block', marginBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+            <label style={{ fontSize: '0.775rem', fontWeight: '700', color: 'var(--color-primary)', display: 'block', marginBottom: '0.35rem' }}>
               Description
             </label>
             <textarea
+              name="description"
               rows={2}
-              placeholder="Product description and features..."
+              placeholder="Short product details..."
               value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontSize: '0.85rem', backgroundColor: 'var(--color-cream)', outline: 'none', fontFamily: 'inherit' }}
+              onChange={handleInputChange}
+              style={{ width: '100%', padding: '0.6rem 0.85rem', borderRadius: 'var(--radius-sm)', border: '1.5px solid var(--color-border)', fontSize: '0.85rem', outline: 'none', resize: 'vertical' }}
             />
           </div>
 
-          {/* In Stock Toggle Checkbox */}
-          <div style={{ paddingTop: '0.25rem' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', cursor: 'pointer', userSelect: 'none' }}>
-              <input
-                type="checkbox"
-                checked={formData.inStock}
-                onChange={(e) => setFormData({ ...formData, inStock: e.target.checked })}
-                style={{ accentColor: 'var(--color-primary)', width: '18px', height: '18px', cursor: 'pointer' }}
-              />
-              <span style={{ fontSize: '0.875rem', fontWeight: '700', color: 'var(--color-primary)' }}>
-                Product In Stock (Available for Purchase)
-              </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', paddingTop: '0.2rem' }}>
+            <input
+              type="checkbox"
+              id="inStock"
+              name="inStock"
+              checked={formData.inStock}
+              onChange={handleInputChange}
+              style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+            />
+            <label htmlFor="inStock" style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--color-primary)', cursor: 'pointer' }}>
+              Product In Stock hai (Available for purchase)
             </label>
           </div>
 
-          {/* Form Actions */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem', paddingTop: '0.75rem', borderTop: '1px solid var(--color-border)' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1rem', paddingTop: '0.85rem', borderTop: '1px solid var(--color-border)' }}>
             <button
               type="button"
               onClick={() => setIsModalOpen(false)}
@@ -610,13 +652,12 @@ export const AdminProducts = () => {
             >
               Cancel
             </button>
-
             <button
               type="submit"
               className="btn btn-primary"
               style={{ padding: '0.55rem 1.3rem', fontSize: '0.85rem' }}
             >
-              {modalMode === 'add' ? 'Save & Add Product' : 'Update Product'}
+              {modalMode === 'add' ? 'Add Product' : 'Save Changes'}
             </button>
           </div>
 

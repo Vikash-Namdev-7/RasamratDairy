@@ -3,7 +3,14 @@ const express = require('express');
 const cors = require('cors');
 const connectDB = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
+
 const authRoutes = require('./routes/authRoutes');
+const productRoutes = require('./routes/productRoutes');
+const adminProductRoutes = require('./routes/adminProductRoutes');
+const categoryRoutes = require('./routes/categoryRoutes');
+const adminCategoryRoutes = require('./routes/adminCategoryRoutes');
+const zoneRoutes = require('./routes/zoneRoutes');
+const adminZoneRoutes = require('./routes/adminZoneRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -29,8 +36,17 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// API Routes
+// API Routes (Public & Admin Protected)
 app.use('/api/auth', authRoutes);
+
+app.use('/api/products', productRoutes);
+app.use('/api/admin/products', adminProductRoutes);
+
+app.use('/api/categories', categoryRoutes);
+app.use('/api/admin/categories', adminCategoryRoutes);
+
+app.use('/api/zones', zoneRoutes);
+app.use('/api/admin/zones', adminZoneRoutes);
 
 // Global Error Handler Middleware
 app.use(errorHandler);

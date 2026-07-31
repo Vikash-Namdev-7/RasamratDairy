@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { products } from '../data/products';
-import { categories } from '../data/categories';
+import { products as fallbackProducts } from '../data/products';
+import { categories as fallbackCategories } from '../data/categories';
 import ProductCard from '../components/ProductCard';
 import { Search, X, ArrowLeft, SlidersHorizontal } from '../../../components/Icons';
+import productsApi from '../../../api/products.api';
 
 export const Products = ({ onNavigate }) => {
   const getInitialCategory = () => {
@@ -17,6 +18,38 @@ export const Products = ({ onNavigate }) => {
   const [inStockOnly, setInStockOnly] = useState(false);
   const [sortBy, setSortBy] = useState('popularity');
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+
+  const [productsList, setProductsList] = useState(fallbackProducts);
+  const [categoriesList, setCategoriesList] = useState(fallbackCategories);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchData() {
+      try {
+        setLoading(true);
+        const [prodRes, catRes] = await Promise.all([
+          productsApi.getProducts(),
+          productsApi.getCategories()
+        ]);
+
+        if (isMounted) {
+          if (prodRes.data && Array.isArray(prodRes.data.data) && prodRes.data.data.length > 0) {
+            setProductsList(prodRes.data.data);
+          }
+          if (catRes.data && Array.isArray(catRes.data.data) && catRes.data.data.length > 0) {
+            setCategoriesList(catRes.data.data);
+          }
+        }
+      } catch (err) {
+        console.warn('⚠️ Real API offline, using fallback dataset in Products page');
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    }
+    fetchData();
+    return () => { isMounted = false; };
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -53,13 +86,14 @@ export const Products = ({ onNavigate }) => {
 
   const activeCategoryObj = useMemo(() => {
     if (selectedCategories.length === 1) {
-      return categories.find((c) => c.slug === selectedCategories[0]);
+      return categoriesList.find((c) => c.slug === selectedCategories[0]);
     }
     return null;
-  }, [selectedCategories]);
+  }, [selectedCategories, categoriesList]);
 
+  // Dynamic Filtering Logic
   const filteredProducts = useMemo(() => {
-    let result = [...products];
+    let result = [...productsList];
 
     if (selectedCategories.length > 0) {
       result = result.filter((p) => selectedCategories.includes(p.categorySlug));
@@ -68,358 +102,236 @@ export const Products = ({ onNavigate }) => {
     result = result.filter((p) => p.price >= minPrice && p.price <= maxPrice);
 
     if (inStockOnly) {
-      result = result.filter((p) => p.inStock !== false);
+      result = result.filter((p) => p.inStock);
     }
 
-    if (sortBy === 'price-asc') {
+    if (sortBy === 'price-low') {
       result.sort((a, b) => a.price - b.price);
-    } else if (sortBy === 'price-desc') {
+    } else if (sortBy === 'price-high') {
       result.sort((a, b) => b.price - a.price);
     } else if (sortBy === 'rating') {
       result.sort((a, b) => b.rating - a.rating);
-    } else {
-      result.sort((a, b) => (b.rating * (b.reviewCount || 100)) - (a.rating * (a.reviewCount || 100)));
     }
 
     return result;
-  }, [selectedCategories, minPrice, maxPrice, inStockOnly, sortBy]);
+  }, [productsList, selectedCategories, minPrice, maxPrice, inStockOnly, sortBy]);
 
   return (
-    <div>
-      {/* 1. Dynamic Hero Header Banner */}
-      <section
-        style={{
-          background: 'linear-gradient(135deg, var(--color-navy) 0%, var(--color-navy-dark) 100%)',
-          color: '#FFFFFF',
-          paddingTop: '1.75rem',
-          paddingBottom: '2.25rem',
-          borderBottom: '3px solid var(--color-gold)',
-          marginBottom: '1.75rem'
-        }}
-      >
-        <div className="container">
-          {/* Top Back Navigation Button */}
-          <div style={{ marginBottom: '0.85rem' }}>
-            <button
-              type="button"
-              onClick={handleBackClick}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-                background: 'rgba(255, 255, 255, 0.1)',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-                borderRadius: 'var(--radius-full)',
-                color: '#FFFFFF',
-                fontWeight: '600',
-                fontSize: '0.825rem',
-                cursor: 'pointer',
-                padding: '0.35rem 0.85rem'
-              }}
-            >
-              <ArrowLeft size={16} color="#FFFFFF" />
-              <span>Back</span>
-            </button>
-          </div>
-
-          <span className="badge-gold" style={{ marginBottom: '0.65rem' }}>
-            {activeCategoryObj ? `✨ TAAZA ${activeCategoryObj.name.toUpperCase()} COLLECTION` : '✨ COMPLETE COLLECTION'}
-          </span>
-
-          <h1 className="font-display hero-title" style={{ fontWeight: '800', color: '#FFFFFF', marginBottom: '0.4rem', lineHeight: '1.2' }}>
-            {activeCategoryObj ? (
-              <>Taaza <span style={{ color: 'var(--color-gold)' }}>{activeCategoryObj.name}</span> Collection</>
-            ) : (
-              <>Sabhi Taaza <span style={{ color: 'var(--color-gold)' }}>Dairy Products</span></>
-            )}
-          </h1>
-          <p style={{ fontSize: '0.9rem', color: '#CBD5E1', maxWidth: '640px', lineHeight: '1.5' }}>
-            {activeCategoryObj ? activeCategoryObj.tagline : 'Rozana packing, 100% milawat-rahit shuddh doodh, dahi, paneer, ghee aur makhan. Seedha farm se aapke ghar tak.'}
-          </p>
-        </div>
-      </section>
-
-      <div className="container" style={{ paddingBottom: '3.5rem' }}>
+    <div style={{ padding: '2rem 0', backgroundColor: 'var(--color-cream)' }}>
+      <div className="container">
         
-        {/* Mobile Unified Control Bar */}
-        <div className="mobile-filter-bar" style={{ display: 'none', marginBottom: '1.25rem' }}>
+        {/* Back Button Bar */}
+        <div style={{ marginBottom: '1.25rem' }}>
+          <button
+            type="button"
+            onClick={handleBackClick}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--color-navy)',
+              fontWeight: '700',
+              fontSize: '0.9rem',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem'
+            }}
+          >
+            <ArrowLeft size={16} color="var(--color-navy)" /> Back
+          </button>
+        </div>
+
+        {/* Dynamic Category Header Banner */}
+        {activeCategoryObj ? (
           <div
             style={{
+              backgroundColor: 'var(--color-navy)',
+              color: '#FFFFFF',
+              borderRadius: 'var(--radius-md)',
+              padding: '1.75rem',
+              marginBottom: '2rem',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'space-between',
-              backgroundColor: 'var(--color-cream-card)',
-              borderRadius: 'var(--radius-md)',
-              border: '1.5px solid var(--color-border)',
-              padding: '0.6rem 0.85rem',
-              boxShadow: 'var(--shadow-sm)'
+              gap: '1.5rem',
+              boxShadow: 'var(--shadow-md)',
+              borderBottom: '3px solid var(--color-gold)',
+              position: 'relative',
+              overflow: 'hidden'
             }}
           >
-            <button
-              type="button"
-              onClick={() => setMobileFilterOpen(!mobileFilterOpen)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-                backgroundColor: 'var(--color-navy)',
-                color: '#FFFFFF',
-                border: 'none',
-                padding: '0.45rem 0.85rem',
-                borderRadius: 'var(--radius-full)',
-                fontWeight: '600',
-                fontSize: '0.825rem',
-                cursor: 'pointer'
-              }}
-            >
-              <SlidersHorizontal size={14} color="#FFFFFF" />
-              <span>Filters ({selectedCategories.length > 0 ? selectedCategories.length : 'All'})</span>
-            </button>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                style={{
-                  padding: '0.45rem 0.75rem',
-                  borderRadius: 'var(--radius-full)',
-                  border: '1px solid var(--color-border)',
-                  backgroundColor: 'var(--color-cream)',
-                  color: 'var(--color-navy)',
-                  fontWeight: '600',
-                  fontSize: '0.8rem',
-                  outline: 'none'
-                }}
-              >
-                <option value="popularity">Popularity</option>
-                <option value="price-asc">Price: Low to High</option>
-                <option value="price-desc">Price: High to Low</option>
-                <option value="rating">Top Rated</option>
-              </select>
+            <img
+              src={activeCategoryObj.image}
+              alt={activeCategoryObj.name}
+              style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--color-gold)' }}
+            />
+            <div>
+              <span className="badge-gold" style={{ fontSize: '0.675rem', marginBottom: '0.3rem' }}>
+                Category Catalogue
+              </span>
+              <h1 className="font-display" style={{ fontSize: '1.75rem', fontWeight: '800', margin: 0 }}>
+                Taaza {activeCategoryObj.name}
+              </h1>
+              <p style={{ color: '#CBD5E1', fontSize: '0.875rem', marginTop: '0.2rem' }}>
+                {activeCategoryObj.tagline || '100% Shuddh & Pure Daily Products'}
+              </p>
             </div>
           </div>
+        ) : (
+          <div style={{ marginBottom: '2rem' }}>
+            <h1 className="font-display" style={{ fontSize: '2rem', color: 'var(--color-navy)', fontWeight: '800' }}>
+              Hamare Sabhi Dairy Products
+            </h1>
+            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.925rem' }}>
+              Farm fresh full cream doodh, dahi, paneer aur desi ghee order karein
+            </p>
+          </div>
+        )}
+
+        {/* Mobile Filter Toggle Bar */}
+        <div className="mobile-filter-bar" style={{ display: 'none', marginBottom: '1rem' }}>
+          <button
+            type="button"
+            onClick={() => setMobileFilterOpen(!mobileFilterOpen)}
+            style={{
+              width: '100%',
+              padding: '0.75rem',
+              borderRadius: 'var(--radius-md)',
+              backgroundColor: 'var(--color-navy)',
+              color: '#FFFFFF',
+              border: 'none',
+              fontWeight: '700',
+              fontSize: '0.9rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              cursor: 'pointer'
+            }}
+          >
+            <SlidersHorizontal size={18} color="var(--color-gold)" />
+            {mobileFilterOpen ? 'Filters Chhupayein' : 'Filter Products (Category, Price)'}
+          </button>
         </div>
 
-        {/* Main Listing Layout: Sidebar + Grid */}
+        {/* Layout Grid */}
         <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: '2rem', alignItems: 'start' }} className="products-listing-layout">
           
-          {/* Left Sidebar Filters */}
-          <aside
-            style={{
-              backgroundColor: 'var(--color-cream-card)',
-              borderRadius: 'var(--radius-md)',
-              border: '1.5px solid var(--color-border)',
-              padding: '1.5rem',
-              position: 'sticky',
-              top: '90px',
-              boxShadow: 'var(--shadow-sm)'
-            }}
-            className={`filter-sidebar ${mobileFilterOpen ? 'mobile-show' : ''}`}
-          >
+          {/* Left Sidebar Filter Panel */}
+          <aside className={`filter-sidebar ${mobileFilterOpen ? 'mobile-show' : ''}`} style={{ backgroundColor: 'var(--color-cream-card)', borderRadius: 'var(--radius-md)', border: '1.5px solid var(--color-border)', padding: '1.25rem', boxShadow: 'var(--shadow-sm)' }}>
+            
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', paddingBottom: '0.75rem', borderBottom: '1px solid var(--color-border)' }}>
-              <h3 className="font-display" style={{ fontSize: '1.15rem', color: 'var(--color-navy)', fontWeight: '700' }}>
-                Filter Catalog
+              <h3 className="font-display" style={{ fontSize: '1.1rem', color: 'var(--color-navy)', fontWeight: '700' }}>
+                Filter Products
               </h3>
-              {(selectedCategories.length > 0 || minPrice > 0 || maxPrice < 1000 || inStockOnly) && (
+              {(selectedCategories.length > 0 || inStockOnly || sortBy !== 'popularity') && (
                 <button
                   type="button"
                   onClick={clearFilters}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--color-wine)',
-                    fontWeight: '700',
-                    fontSize: '0.8rem',
-                    cursor: 'pointer'
-                  }}
+                  style={{ background: 'none', border: 'none', color: 'var(--color-wine)', fontSize: '0.775rem', fontWeight: '700', cursor: 'pointer' }}
                 >
-                  Reset All
+                  Clear All
                 </button>
               )}
             </div>
 
-            {/* Category Checkbox Filter */}
-            <div style={{ marginBottom: '1.75rem' }}>
-              <h4 style={{ fontSize: '0.85rem', color: 'var(--color-navy)', fontWeight: '700', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            {/* Filter Group: Category Checkboxes */}
+            <div style={{ marginBottom: '1.5rem' }}>
+              <h4 style={{ fontSize: '0.85rem', color: 'var(--color-navy)', fontWeight: '700', marginBottom: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 Categories
               </h4>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                {categories.map((cat) => {
-                  const isChecked = selectedCategories.includes(cat.slug);
-                  return (
-                    <label
-                      key={cat.id}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        fontSize: '0.9rem',
-                        color: isChecked ? 'var(--color-navy)' : 'var(--color-text-muted)',
-                        fontWeight: isChecked ? '700' : '500',
-                        cursor: 'pointer',
-                        userSelect: 'none'
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={() => handleCategoryToggle(cat.slug)}
-                          style={{ accentColor: 'var(--color-wine)', width: '16px', height: '16px', cursor: 'pointer' }}
-                        />
-                        <span>Taaza {cat.name}</span>
-                      </div>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--color-text-light)' }}>({cat.productCount})</span>
-                    </label>
-                  );
-                })}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                {categoriesList.map((cat) => (
+                  <label
+                    key={cat.id || cat._id || cat.slug}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: 'var(--color-text-main)', cursor: 'pointer' }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedCategories.includes(cat.slug)}
+                      onChange={() => handleCategoryToggle(cat.slug)}
+                      style={{ width: '16px', height: '16px', accentColor: 'var(--color-navy)', cursor: 'pointer' }}
+                    />
+                    <span>Taaza {cat.name}</span>
+                  </label>
+                ))}
               </div>
             </div>
 
-            {/* Price Range Filter */}
-            <div style={{ marginBottom: '1.75rem' }}>
-              <h4 style={{ fontSize: '0.85rem', color: 'var(--color-navy)', fontWeight: '700', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Price Range (₹)
-              </h4>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                <input
-                  type="number"
-                  placeholder="Min"
-                  value={minPrice || ''}
-                  onChange={(e) => setMinPrice(Number(e.target.value) || 0)}
-                  style={{ width: '100%', padding: '0.4rem 0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontSize: '0.85rem' }}
-                />
-                <span style={{ color: 'var(--color-text-muted)' }}>-</span>
-                <input
-                  type="number"
-                  placeholder="Max"
-                  value={maxPrice || ''}
-                  onChange={(e) => setMaxPrice(Number(e.target.value) || 1000)}
-                  style={{ width: '100%', padding: '0.4rem 0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontSize: '0.85rem' }}
-                />
-              </div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', textAlign: 'center' }}>
-                ₹{minPrice} — ₹{maxPrice}
-              </div>
-            </div>
-
-            {/* In Stock Only Toggle */}
-            <div style={{ paddingTop: '1rem', borderTop: '1px solid var(--color-border)' }}>
-              <label
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  fontSize: '0.9rem',
-                  color: 'var(--color-navy)',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  userSelect: 'none'
-                }}
-              >
-                <span>In Stock Only</span>
+            {/* Filter Group: In Stock Only */}
+            <div style={{ marginBottom: '1.5rem', paddingTop: '1rem', borderTop: '1px solid var(--color-border)' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', fontWeight: '600', color: 'var(--color-navy)', cursor: 'pointer' }}>
                 <input
                   type="checkbox"
                   checked={inStockOnly}
                   onChange={(e) => setInStockOnly(e.target.checked)}
-                  style={{ accentColor: 'var(--color-wine)', width: '18px', height: '18px', cursor: 'pointer' }}
+                  style={{ width: '16px', height: '16px', accentColor: 'var(--color-navy)', cursor: 'pointer' }}
                 />
+                <span>Sirf In-Stock Items Dikhayein</span>
               </label>
             </div>
+
           </aside>
 
-          {/* Right Product Grid Area */}
-          <div>
-            {/* Desktop Sort & Count Strip */}
-            <div
-              className="desktop-sort-bar"
-              style={{
-                backgroundColor: 'var(--color-cream-card)',
-                borderRadius: 'var(--radius-md)',
-                border: '1.5px solid var(--color-border)',
-                padding: '0.85rem 1.25rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                flexWrap: 'wrap',
-                gap: '1rem',
-                marginBottom: '1.5rem',
-                boxShadow: 'var(--shadow-sm)'
-              }}
-            >
-              <div style={{ fontSize: '0.925rem', fontWeight: '700', color: 'var(--color-navy)' }}>
-                {filteredProducts.length} {filteredProducts.length === 1 ? 'Product' : 'Products'} Available
-                {activeCategoryObj && (
-                  <span style={{ fontSize: '0.8rem', color: 'var(--color-wine)', fontWeight: '600', marginLeft: '0.4rem' }}>
-                    (Filtered by Taaza {activeCategoryObj.name})
-                  </span>
-                )}
-              </div>
+          {/* Right Main Product Listing Area */}
+          <main>
+            {/* Top Toolbar */}
+            <div className="desktop-sort-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'var(--color-cream-card)', padding: '0.75rem 1.25rem', borderRadius: 'var(--radius-md)', border: '1.5px solid var(--color-border)', marginBottom: '1.5rem' }}>
+              <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', fontWeight: '600' }}>
+                Total <strong>{filteredProducts.length}</strong> items mile
+              </span>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', fontWeight: '500' }}>Sort By:</span>
+                <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: '600' }}>Sort By:</span>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
                   style={{
-                    padding: '0.45rem 0.85rem',
+                    padding: '0.4rem 0.85rem',
                     borderRadius: 'var(--radius-full)',
                     border: '1.5px solid var(--color-border)',
                     backgroundColor: 'var(--color-cream)',
+                    fontSize: '0.825rem',
+                    fontWeight: '700',
                     color: 'var(--color-navy)',
-                    fontWeight: '600',
-                    fontSize: '0.85rem',
-                    cursor: 'pointer',
-                    outline: 'none'
+                    outline: 'none',
+                    cursor: 'pointer'
                   }}
                 >
-                  <option value="popularity">Popularity</option>
-                  <option value="price-asc">Price: Low to High</option>
-                  <option value="price-desc">Price: High to Low</option>
+                  <option value="popularity">Sabse Popular</option>
+                  <option value="price-low">Price: Kam Se Zyada</option>
+                  <option value="price-high">Price: Zyada Se Kam</option>
                   <option value="rating">Top Rated</option>
                 </select>
               </div>
             </div>
 
+            {/* Products Grid */}
             {filteredProducts.length > 0 ? (
               <div className="grid-3">
-                {filteredProducts.map((product) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    onNavigate={onNavigate}
-                  />
+                {filteredProducts.map((p) => (
+                  <ProductCard key={p.id || p._id} product={p} onNavigate={onNavigate} />
                 ))}
               </div>
             ) : (
-              <div
-                style={{
-                  backgroundColor: 'var(--color-cream-card)',
-                  borderRadius: 'var(--radius-md)',
-                  border: '1.5px dashed var(--color-border)',
-                  padding: '3.5rem 1.5rem',
-                  textAlign: 'center',
-                  marginTop: '1rem'
-                }}
-              >
-                <div style={{ fontSize: '3rem', marginBottom: '0.75rem' }}>🔍</div>
-                <h3 className="font-display" style={{ fontSize: '1.35rem', color: 'var(--color-navy)', fontWeight: '700', marginBottom: '0.4rem' }}>
-                  Is category me filhaal koi product nahi hai
+              <div style={{ textAlign: 'center', padding: '3.5rem 1.5rem', backgroundColor: 'var(--color-cream-card)', borderRadius: 'var(--radius-md)', border: '1.5px solid var(--color-border)' }}>
+                <h3 className="font-display" style={{ fontSize: '1.25rem', color: 'var(--color-navy)', marginBottom: '0.5rem' }}>
+                  Koi matching product nahi mila.
                 </h3>
-                <p className="text-muted" style={{ fontSize: '0.9rem', marginBottom: '1.5rem', maxWidth: '400px', marginInline: 'auto' }}>
-                  Aapke dwara chunie gaye filters ke anusaar koi item milan nahi hua. Filter reset karke baaki catalog dekhein.
+                <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', marginBottom: '1.25rem' }}>
+                  Kripya filters reset karein ya doosri category select karein.
                 </p>
                 <button
                   type="button"
-                  className="btn btn-wine"
                   onClick={clearFilters}
+                  className="btn btn-primary"
+                  style={{ padding: '0.55rem 1.25rem', fontSize: '0.85rem' }}
                 >
-                  Reset Catalog Filters <X size={16} />
+                  Reset Filters
                 </button>
               </div>
             )}
+          </main>
 
-          </div>
         </div>
 
       </div>

@@ -1,25 +1,34 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
-import { zones as initialZones } from '../features/customer/data/zones';
+import { deliveryZones as initialZones } from '../features/customer/data/zones';
+import zonesApi from '../api/zones.api';
 
 const CartContext = createContext(null);
 const LOCAL_STORAGE_CART_KEY = 'rasamrat-cart';
 const LOCAL_STORAGE_ZONE_KEY = 'rasamrat-zone';
-const LOCAL_STORAGE_ALL_ZONES_KEY = 'rasamrat-zones-all';
 
 export const CartProvider = ({ children }) => {
-  // Zones list state synced with localStorage
-  const [allZones, setAllZones] = useState(() => {
-    try {
-      const saved = localStorage.getItem(LOCAL_STORAGE_ALL_ZONES_KEY);
-      return saved ? JSON.parse(saved) : initialZones;
-    } catch (e) {
-      return initialZones;
-    }
-  });
+  const [allZones, setAllZones] = useState(initialZones);
 
-  // Only active zones visible to customer
+  // Fetch real delivery zones from REST API
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchZones() {
+      try {
+        const res = await zonesApi.getZones();
+        if (isMounted && res.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
+          setAllZones(res.data.data);
+        }
+      } catch (err) {
+        console.warn('⚠️ Real Zones API offline, using fallback zones dataset in CartContext');
+      }
+    }
+    fetchZones();
+    return () => { isMounted = false; };
+  }, []);
+
+  // Active zones filter
   const activeZones = useMemo(() => {
-    const activeOnly = allZones.filter((z) => z.active !== false);
+    const activeOnly = allZones.filter((z) => z.isActive !== false);
     return activeOnly.length > 0 ? activeOnly : allZones;
   }, [allZones]);
 
@@ -35,149 +44,116 @@ export const CartProvider = ({ children }) => {
   const [selectedZoneId, setSelectedZoneId] = useState(() => {
     try {
       const saved = localStorage.getItem(LOCAL_STORAGE_ZONE_KEY);
-      return saved || activeZones[0].id;
+      return saved || (activeZones[0]?.id || activeZones[0]?._id);
     } catch (e) {
-      return activeZones[0].id;
+      return activeZones[0]?.id || activeZones[0]?._id;
     }
   });
 
-  // Sync allZones to localStorage & window custom event
-  useEffect(() => {
-    try {
-      localStorage.setItem(LOCAL_STORAGE_ALL_ZONES_KEY, JSON.stringify(allZones));
-    } catch (e) {
-      console.error('Failed to save zones to localStorage', e);
-    }
-  }, [allZones]);
-
-  // Listen for zone update events across components
-  useEffect(() => {
-    const handleStorageChange = () => {
-      try {
-        const saved = localStorage.getItem(LOCAL_STORAGE_ALL_ZONES_KEY);
-        if (saved) {
-          setAllZones(JSON.parse(saved));
-        }
-      } catch (e) {}
-    };
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('rasamrat-zones-updated', handleStorageChange);
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('rasamrat-zones-updated', handleStorageChange);
-    };
-  }, []);
-
-  // Save cart to localStorage
   useEffect(() => {
     try {
       localStorage.setItem(LOCAL_STORAGE_CART_KEY, JSON.stringify(cartItems));
-    } catch (e) {}
+    } catch (e) {
+      console.error('Failed to save cart to localStorage', e);
+    }
   }, [cartItems]);
 
-  // Save selected zone to localStorage
   useEffect(() => {
     try {
-      localStorage.setItem(LOCAL_STORAGE_ZONE_KEY, selectedZoneId);
-    } catch (e) {}
+      if (selectedZoneId) {
+        localStorage.setItem(LOCAL_STORAGE_ZONE_KEY, selectedZoneId);
+      }
+    } catch (e) {
+      console.error('Failed to save zone ID to localStorage', e);
+    }
   }, [selectedZoneId]);
 
   const selectedZone = useMemo(() => {
-    return activeZones.find((z) => z.id === selectedZoneId) || activeZones[0];
+    return (
+      activeZones.find((z) => (z.id || z._id) === selectedZoneId) ||
+      activeZones[0] ||
+      initialZones[0]
+    );
   }, [activeZones, selectedZoneId]);
 
   const addToCart = (product, qty = 1) => {
-    if (product.inStock === false) return;
-    setCartItems((prev) => {
-      const existing = prev.find((item) => item.id === product.id);
-      if (existing) {
-        return prev.map((item) =>
-          item.id === product.id
-            ? { ...item, quantity: item.quantity + qty }
-            : item
-        );
+    setCartItems((prevItems) => {
+      const prodId = product.id || product._id;
+      const existingItemIndex = prevItems.findIndex((item) => (item.id || item._id) === prodId);
+
+      if (existingItemIndex > -1) {
+        const updated = [...prevItems];
+        updated[existingItemIndex].qty += qty;
+        return updated;
+      } else {
+        return [...prevItems, { ...product, qty }];
       }
-      return [...prev, { ...product, quantity: qty }];
     });
   };
 
-  const removeFromCart = (productId) => {
-    setCartItems((prev) => prev.filter((item) => item.id !== productId));
-  };
-
-  const updateQty = (productId, newQty) => {
-    if (newQty <= 0) {
+  const updateQuantity = (productId, qty) => {
+    if (qty <= 0) {
       removeFromCart(productId);
       return;
     }
-    setCartItems((prev) =>
-      prev.map((item) =>
-        item.id === productId ? { ...item, quantity: newQty } : item
-      )
+    setCartItems((prevItems) =>
+      prevItems.map((item) => ((item.id || item._id) === productId ? { ...item, qty } : item))
     );
+  };
+
+  const removeFromCart = (productId) => {
+    setCartItems((prevItems) => prevItems.filter((item) => (item.id || item._id) !== productId));
   };
 
   const clearCart = () => {
     setCartItems([]);
   };
 
-  const setZone = (zoneId) => {
-    setSelectedZoneId(zoneId);
-  };
-
-  const updateAllZones = (newZonesList) => {
-    setAllZones(newZonesList);
-    try {
-      localStorage.setItem(LOCAL_STORAGE_ALL_ZONES_KEY, JSON.stringify(newZonesList));
-      window.dispatchEvent(new Event('rasamrat-zones-updated'));
-    } catch (e) {}
-  };
-
-  // Calculations
   const subtotal = useMemo(() => {
-    return cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    return cartItems.reduce((sum, item) => sum + item.price * item.qty, 0);
   }, [cartItems]);
 
-  const minOrderAmount = selectedZone ? (selectedZone.minOrderAmount || selectedZone.minOrder || 100) : 100;
-  const deliveryFee = selectedZone ? (selectedZone.deliveryFee || 0) : 0;
+  const deliveryFee = useMemo(() => {
+    if (cartItems.length === 0) return 0;
+    return selectedZone ? selectedZone.deliveryFee : 0;
+  }, [cartItems.length, selectedZone]);
 
-  const shortfall = Math.max(0, minOrderAmount - subtotal);
-  const isMinOrderMet = subtotal >= minOrderAmount;
+  const minOrderAmount = useMemo(() => {
+    return selectedZone ? selectedZone.minOrderAmount : 0;
+  }, [selectedZone]);
 
-  const progressPercent = useMemo(() => {
-    if (minOrderAmount <= 0) return 100;
-    return Math.min(100, Math.round((subtotal / minOrderAmount) * 100));
-  }, [subtotal, minOrderAmount]);
+  const isMinOrderMet = useMemo(() => {
+    if (cartItems.length === 0) return true;
+    return subtotal >= minOrderAmount;
+  }, [subtotal, minOrderAmount, cartItems.length]);
 
-  const grandTotal = subtotal + deliveryFee;
+  const grandTotal = useMemo(() => {
+    if (cartItems.length === 0) return 0;
+    return subtotal + deliveryFee;
+  }, [subtotal, deliveryFee, cartItems.length]);
 
   const totalCount = useMemo(() => {
-    return cartItems.reduce((sum, item) => sum + item.quantity, 0);
+    return cartItems.reduce((sum, item) => sum + item.qty, 0);
   }, [cartItems]);
 
   return (
     <CartContext.Provider
       value={{
         cartItems,
-        addToCart,
-        removeFromCart,
-        updateQty,
-        clearCart,
-        selectedZoneId,
-        selectedZone,
-        setZone,
         zones: activeZones,
-        allZones,
-        updateAllZones,
-        deliveryZones: activeZones,
+        selectedZone,
+        selectedZoneId,
+        setSelectedZoneId,
+        addToCart,
+        updateQuantity,
+        removeFromCart,
+        clearCart,
         subtotal,
-        totalCount,
         deliveryFee,
         minOrderAmount,
-        shortfall,
         isMinOrderMet,
-        progressPercent,
         grandTotal,
+        totalCount
       }}
     >
       {children}

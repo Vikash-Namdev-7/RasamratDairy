@@ -1,19 +1,51 @@
-import React, { useState } from 'react';
-import { products } from '../data/products';
-import { categories } from '../data/categories';
+import React, { useState, useEffect } from 'react';
+import { products as fallbackProducts } from '../data/products';
+import { categories as fallbackCategories } from '../data/categories';
 import { testimonials } from '../data/testimonials';
 import ProductCard from '../components/ProductCard';
 import CategoryCard from '../components/CategoryCard';
 import SectionHeading from '../components/SectionHeading';
 import TestimonialSlider from '../components/TestimonialSlider';
 import { ArrowRight, ShieldCheck, Clock, Sparkles } from '../../../components/Icons';
+import productsApi from '../../../api/products.api';
 
 export const Home = ({ onNavigate }) => {
   const [activeTab, setActiveTab] = useState('all');
+  const [productList, setProductList] = useState(fallbackProducts);
+  const [categoryList, setCategoryList] = useState(fallbackCategories);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchData() {
+      try {
+        setLoading(true);
+        const [prodRes, catRes] = await Promise.all([
+          productsApi.getProducts(),
+          productsApi.getCategories()
+        ]);
+
+        if (isMounted) {
+          if (prodRes.data && Array.isArray(prodRes.data.data) && prodRes.data.data.length > 0) {
+            setProductList(prodRes.data.data);
+          }
+          if (catRes.data && Array.isArray(catRes.data.data) && catRes.data.data.length > 0) {
+            setCategoryList(catRes.data.data);
+          }
+        }
+      } catch (err) {
+        console.warn('⚠️ Real API offline, falling back to local dataset in Home page');
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    }
+    fetchData();
+    return () => { isMounted = false; };
+  }, []);
 
   const filteredProducts = activeTab === 'all'
-    ? products
-    : products.filter((p) => p.categorySlug === activeTab);
+    ? productList
+    : productList.filter((p) => p.categorySlug === activeTab);
 
   return (
     <div>
@@ -58,69 +90,66 @@ export const Home = ({ onNavigate }) => {
                 >
                   Start Daily Subscription <ArrowRight size={16} />
                 </button>
+                
                 <button
                   type="button"
                   className="btn btn-outline-light"
                   onClick={() => onNavigate && onNavigate('/products')}
                   style={{ padding: '0.75rem 1.4rem', fontSize: '0.9rem' }}
                 >
-                  Explore Products
+                  Browse Products
                 </button>
+              </div>
+
+              {/* Trust Indicators Strip */}
+              <div className="hero-trust-row" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginTop: '2rem', paddingTop: '1.25rem', borderTop: '1px solid rgba(255, 255, 255, 0.12)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <ShieldCheck size={18} color="var(--color-gold)" />
+                  <span style={{ fontSize: '0.8rem', color: '#E2E8F0', fontWeight: '600' }}>Lab Tested 0% Adulteration</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Clock size={18} color="var(--color-gold)" />
+                  <span style={{ fontSize: '0.8rem', color: '#E2E8F0', fontWeight: '600' }}>Subah 7 Baje Tak Delivery</span>
+                </div>
               </div>
             </div>
 
-            {/* Right Side: Seamless Borderless Showcase Banner */}
-            <div style={{ display: 'flex', justifyContent: 'center', position: 'relative' }}>
-              <div
-                style={{
-                  width: '100%',
-                  maxWidth: '380px',
-                  borderRadius: '24px',
-                  overflow: 'hidden',
-                  position: 'relative',
-                  boxShadow: '0 20px 40px rgba(0, 0, 0, 0.45)',
-                  border: '1px solid rgba(212, 165, 66, 0.35)',
-                  backgroundColor: '#0F172A'
-                }}
-              >
+            {/* Right Hero Image Card */}
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <div style={{ position: 'relative', width: '100%', maxWidth: '420px' }}>
                 <img
-                  src="https://images.unsplash.com/photo-1528750997573-59b89d56f4f7?auto=format&fit=crop&w=800&q=80"
-                  onError={(e) => { e.target.src = "https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=800&q=80"; }}
-                  alt="Farm Fresh Pure Milk Showcase"
+                  src="https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=700&q=80"
+                  alt="Farm Fresh Dairy Products"
                   style={{
                     width: '100%',
-                    height: '280px',
-                    objectFit: 'cover',
-                    objectPosition: 'center',
-                    display: 'block'
+                    borderRadius: 'var(--radius-md)',
+                    boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
+                    border: '2px solid rgba(212, 165, 66, 0.4)'
                   }}
                 />
-
-                {/* Floating Overlay Pill Badge */}
+                
+                {/* Floating Micro Badge */}
                 <div
                   style={{
                     position: 'absolute',
-                    bottom: '12px',
-                    left: '12px',
-                    right: '12px',
-                    backgroundColor: 'rgba(15, 23, 42, 0.85)',
-                    backdropFilter: 'blur(12px)',
-                    borderRadius: '14px',
-                    padding: '0.65rem 0.85rem',
-                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    bottom: '-12px',
+                    left: '20px',
+                    backgroundColor: 'var(--color-cream-card)',
+                    color: 'var(--color-navy)',
+                    padding: '0.6rem 1.1rem',
+                    borderRadius: 'var(--radius-md)',
+                    boxShadow: 'var(--shadow-gold)',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'space-between'
+                    gap: '0.5rem',
+                    border: '1.5px solid var(--color-gold)'
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <ShieldCheck size={18} color="var(--color-gold)" />
-                    <div>
-                      <div style={{ fontSize: '0.8rem', fontWeight: '700', color: '#FFFFFF' }}>Farm Fresh Packed</div>
-                      <div style={{ fontSize: '0.675rem', color: '#CBD5E1' }}>Lab Tested • Zero Additives</div>
-                    </div>
+                  <Sparkles size={18} color="var(--color-gold)" />
+                  <div>
+                    <div style={{ fontSize: '0.8rem', fontWeight: '800', lineHeight: '1.1' }}>Fresh Batch</div>
+                    <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)' }}>Packed Today Morning</div>
                   </div>
-                  <span className="badge-gold" style={{ fontSize: '0.65rem', padding: '0.15rem 0.45rem' }}>6-9 AM</span>
                 </div>
               </div>
             </div>
@@ -129,98 +158,77 @@ export const Home = ({ onNavigate }) => {
         </div>
       </section>
 
-      {/* 2. Trust Stats Bar */}
-      <section style={{ backgroundColor: 'var(--color-cream-card)', borderBottom: '1px solid var(--color-border)', padding: '1.25rem 0' }}>
-        <div className="container">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', textAlign: 'center' }} className="stats-grid">
-            <div className="stat-card">
-              <div className="stat-number" style={{ color: 'var(--color-navy)' }}>100%</div>
-              <div className="stat-label">Pure & Lab Tested</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-number" style={{ color: 'var(--color-wine)' }}>6 - 9 AM</div>
-              <div className="stat-label">Morning Slot</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-number" style={{ color: 'var(--color-gold-hover)' }}>5000+</div>
-              <div className="stat-label">Happy Families</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-number" style={{ color: 'var(--color-navy)' }}>0 Additives</div>
-              <div className="stat-label">Preservative Free</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 3. Shop By Category */}
-      <section style={{ padding: '3rem 0' }}>
+      {/* 2. Categories Grid Section */}
+      <section style={{ padding: '3.5rem 0', backgroundColor: 'var(--color-cream)' }}>
         <div className="container">
           <SectionHeading
-            eyebrow="Dairy Fresh"
-            title="Shop By Category"
-            description="Hamare taaza aur shuddh products me se chunav karein"
+            title="Hamare Dairy Products"
+            subtitle="Shuddh aur Taaza dairy items — seedha hamare farm se aapke ghar tak"
           />
 
-          <div className="category-grid">
-            {categories.map((category) => (
-              <CategoryCard key={category.id} category={category} onNavigate={onNavigate} />
+          <div className="category-grid" style={{ marginTop: '2rem' }}>
+            {categoryList.map((cat) => (
+              <CategoryCard key={cat.id || cat._id || cat.slug} category={cat} onNavigate={onNavigate} />
             ))}
           </div>
         </div>
       </section>
 
-      {/* 4. Featured Products Section with Filter Tabs */}
-      <section style={{ padding: '3rem 0', backgroundColor: '#F5EFE6' }}>
+      {/* 3. Featured Bestsellers Section */}
+      <section style={{ padding: '3.5rem 0', backgroundColor: 'var(--color-cream-card)', borderTop: '1px solid var(--color-border)' }}>
         <div className="container">
-          <SectionHeading
-            eyebrow="Popular Items"
-            title="Popular Products"
-            description="Sabse zyada pasand kiye jaane wale farm-fresh items"
-          />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', marginBottom: '2rem' }}>
+            <div>
+              <h2 className="font-display" style={{ fontSize: '1.75rem', color: 'var(--color-navy)', fontWeight: '800' }}>
+                Bestseller Dairy Items
+              </h2>
+              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', marginTop: '0.2rem' }}>
+                Grahakon ke sabse pasandida fresh products
+              </p>
+            </div>
 
-          {/* Filter Tabs - Single Line Horizontal Swipe Bar on Mobile */}
-          <div className="category-tabs-bar hide-scrollbar" style={{ marginBottom: '2rem' }}>
-            {[{ label: 'Sabhi Products', slug: 'all' }, ...categories.map(c => ({ label: `Taaza ${c.name}`, slug: c.slug }))].map((tab) => (
+            {/* Filter Tabs */}
+            <div className="category-tabs-bar">
               <button
-                key={tab.slug}
                 type="button"
-                onClick={() => setActiveTab(tab.slug)}
-                className={`category-tab-btn ${activeTab === tab.slug ? 'active' : ''}`}
+                className={`category-tab-btn ${activeTab === 'all' ? 'active' : ''}`}
+                onClick={() => setActiveTab('all')}
               >
-                {tab.label}
+                Sabhi Products
               </button>
-            ))}
+              {categoryList.map((cat) => (
+                <button
+                  key={cat.id || cat._id || cat.slug}
+                  type="button"
+                  className={`category-tab-btn ${activeTab === cat.slug ? 'active' : ''}`}
+                  onClick={() => setActiveTab(cat.slug)}
+                >
+                  Taaza {cat.name}
+                </button>
+              ))}
+            </div>
           </div>
 
-          <div className="grid-3">
+          {/* Products Grid */}
+          <div className="grid-4">
             {filteredProducts.map((product) => (
-              <ProductCard key={product.id} product={product} onNavigate={onNavigate} />
+              <ProductCard key={product.id || product._id} product={product} onNavigate={onNavigate} />
             ))}
-          </div>
-
-          <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-            <button
-              type="button"
-              className="btn btn-outline"
-              onClick={() => onNavigate && onNavigate('/products')}
-            >
-              View Full Products Catalog <ArrowRight size={16} />
-            </button>
           </div>
         </div>
       </section>
 
-      {/* 5. Customer Testimonials Interactive Slider */}
-      <section style={{ padding: '3rem 0', backgroundColor: 'var(--color-cream)' }}>
+      {/* 4. Testimonials & Grahakon Ka Vishwas */}
+      <section style={{ padding: '3.5rem 0', backgroundColor: 'var(--color-cream)', borderTop: '1px solid var(--color-border)' }}>
         <div className="container">
           <SectionHeading
-            eyebrow="Real Reviews"
-            title="Sunte Hain Apne Grahako Ki Zubaani"
-            description="5,000+ Indore families ka bharosa"
+            title="Grahakon Ka Vishwas"
+            subtitle="Suniyen hamare niyamit subscription grahakon ka kya kehna hai"
           />
 
-          <TestimonialSlider testimonials={testimonials} />
+          <div style={{ marginTop: '2rem' }}>
+            <TestimonialSlider testimonials={testimonials} />
+          </div>
         </div>
       </section>
 
