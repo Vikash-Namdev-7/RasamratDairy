@@ -10,6 +10,7 @@ import Checkout from '../features/customer/pages/Checkout';
 import OrderConfirmation from '../features/customer/pages/OrderConfirmation';
 import Subscription from '../features/customer/pages/Subscription';
 import MyOrders from '../features/customer/pages/MyOrders';
+import Profile from '../features/customer/pages/Profile';
 import Login from '../features/customer/pages/Login';
 import Signup from '../features/customer/pages/Signup';
 import { useAuth } from '../context/AuthContext';
@@ -43,12 +44,7 @@ export const AppRoutes = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // 1. Explicit Customer Signup route (accessible without customer login)
-  if (currentPath === '/signup') {
-    return <Signup onNavigate={navigate} />;
-  }
-
-  // 2. Dedicated Admin Login Route
+  // 1. Un-protected Admin Login route
   if (currentPath === '/admin/login') {
     if (isAdminAuthenticated) {
       return (
@@ -60,42 +56,33 @@ export const AppRoutes = () => {
     return <AdminLogin onNavigate={navigate} />;
   }
 
-  // 3. Protected Admin Control Panel Routes (Requires Admin Authentication)
+  // 2. Admin Routes Protection
   if (currentPath.startsWith('/admin')) {
     if (!isAdminAuthenticated) {
       return <AdminLogin onNavigate={navigate} />;
     }
 
-    const renderAdminPage = () => {
-      if (currentPath === '/admin/products') {
-        return <AdminProducts onNavigate={navigate} />;
-      }
-      if (currentPath === '/admin/categories') {
-        return <AdminCategories onNavigate={navigate} />;
-      }
-      if (currentPath === '/admin/zones') {
-        return <AdminZones onNavigate={navigate} />;
-      }
-      if (currentPath === '/admin/orders') {
-        return <AdminOrders onNavigate={navigate} />;
-      }
-      if (currentPath === '/admin/subscriptions') {
-        return <AdminSubscriptions onNavigate={navigate} />;
-      }
-      if (currentPath === '/admin/settings') {
-        return <AdminSettings onNavigate={navigate} />;
-      }
-      return <Dashboard onNavigate={navigate} />;
-    };
+    let AdminPageComponent = Dashboard;
+    if (currentPath === '/admin/products') AdminPageComponent = AdminProducts;
+    else if (currentPath === '/admin/categories') AdminPageComponent = AdminCategories;
+    else if (currentPath === '/admin/zones') AdminPageComponent = AdminZones;
+    else if (currentPath === '/admin/orders') AdminPageComponent = AdminOrders;
+    else if (currentPath === '/admin/subscriptions') AdminPageComponent = AdminSubscriptions;
+    else if (currentPath === '/admin/settings') AdminPageComponent = AdminSettings;
 
     return (
       <AdminLayout currentPath={currentPath} onNavigate={navigate}>
-        {renderAdminPage()}
+        <AdminPageComponent onNavigate={navigate} />
       </AdminLayout>
     );
   }
 
-  // 4. Unauthenticated Customer Protection: Website access directly shows Customer Login screen first
+  // 3. Public Signup Route
+  if (currentPath === '/signup') {
+    return <Signup onNavigate={navigate} />;
+  }
+
+  // 4. Customer Access Guard
   if (!isCustomerAuthenticated) {
     return <Login onNavigate={navigate} />;
   }
@@ -149,6 +136,11 @@ export const AppRoutes = () => {
       return <MyOrders onNavigate={navigate} />;
     }
 
+    if (currentPath === '/profile') {
+      return <Profile onNavigate={navigate} />;
+    }
+
+    // Default Fallback Page
     return <Home onNavigate={navigate} />;
   };
 

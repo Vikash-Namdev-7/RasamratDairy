@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useCart } from '../../../context/CartContext';
-import { ShieldCheck, Clock, ArrowRight, ArrowLeft, CheckCircle, Truck } from '../../../components/Icons';
+import { ShieldCheck, Clock, ArrowRight, ArrowLeft, CheckCircle, Truck, MapPin, Plus } from '../../../components/Icons';
 import { formatCurrency } from '../../../utils/formatCurrency';
 import ordersApi from '../../../api/orders.api';
+import customerApi from '../../../api/customer.api';
 
 export const Checkout = ({ onNavigate }) => {
-  const { cartItems, selectedZone, subtotal, deliveryFee, grandTotal, clearCart } = useCart();
+  const { cartItems, selectedZone, setSelectedZoneId, zones, subtotal, deliveryFee, grandTotal, clearCart } = useCart();
+
+  const [savedAddresses, setSavedAddresses] = useState([]);
+  const [selectedAddressId, setSelectedAddressId] = useState('manual'); // 'manual' or addressId
 
   useEffect(() => {
     if (cartItems.length === 0 && onNavigate) {
@@ -18,13 +22,68 @@ export const Checkout = ({ onNavigate }) => {
     phone: '',
     address: '',
     landmark: '',
-    deliveryTimeOption: 'asap', // asap or flexible-time
+    deliveryTimeOption: 'asap', // asap or morning
     customTimeNote: '',
-    paymentMethod: 'cod', // COD strictly active
+    paymentMethod: 'cod',
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  // Fetch Saved Addresses on mount
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchSavedAddresses() {
+      try {
+        const res = await customerApi.getProfile();
+        if (isMounted && res.data && res.data.data) {
+          const profile = res.data.data;
+          setFormData((prev) => ({
+            ...prev,
+            fullName: profile.name || prev.fullName,
+            phone: profile.phone || prev.phone
+          }));
+
+          if (Array.isArray(profile.addresses) && profile.addresses.length > 0) {
+            setSavedAddresses(profile.addresses);
+            const firstAddr = profile.addresses[0];
+            const firstId = firstAddr._id || firstAddr.id;
+            setSelectedAddressId(firstId);
+            setFormData((prev) => ({
+              ...prev,
+              address: firstAddr.fullAddress
+            }));
+            if (firstAddr.zoneId && setSelectedZoneId) {
+              setSelectedZoneId(firstAddr.zoneId);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('⚠️ Could not fetch saved addresses in Checkout');
+      }
+    }
+    fetchSavedAddresses();
+    return () => { isMounted = false; };
+  }, [setSelectedZoneId]);
+
+  const handleSelectSavedAddress = (addr) => {
+    const addrId = addr._id || addr.id;
+    setSelectedAddressId(addrId);
+    setFormData((prev) => ({
+      ...prev,
+      address: addr.fullAddress
+    }));
+    if (addr.zoneId && setSelectedZoneId) {
+      setSelectedZoneId(addr.zoneId);
+    }
+    setErrorMsg('');
+  };
+
+  const handleSelectManualEntry = () => {
+    setSelectedAddressId('manual');
+    setFormData((prev) => ({ ...prev, address: '' }));
+    setErrorMsg('');
+  };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -233,7 +292,7 @@ export const Checkout = ({ onNavigate }) => {
               </div>
             </div>
 
-            {/* Section 2: Full Address */}
+            {/* Section 2: Delivery Address (Saved Addresses Selector + Manual Form) */}
             <div
               style={{
                 backgroundColor: 'var(--color-cream-card)',
@@ -247,6 +306,81 @@ export const Checkout = ({ onNavigate }) => {
                 2. Delivery Address (Pura Pata)
               </h3>
 
+              {/* Saved Address Selection Cards (if any exist) */}
+              {savedAddresses.length > 0 && (
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '800', color: 'var(--color-navy)', marginBottom: '0.5rem' }}>
+                    Aapke Saved Addresses Me Se Select Karein:
+                  </label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                    {savedAddresses.map((addr) => {
+                      const addrId = addr._id || addr.id;
+                      const isSelected = selectedAddressId === addrId;
+                      return (
+                        <div
+                          key={addrId}
+                          onClick={() => handleSelectSavedAddress(addr)}
+                          style={{
+                            padding: '0.85rem 1rem',
+                            borderRadius: 'var(--radius-sm)',
+                            border: isSelected ? '2px solid var(--color-gold-hover)' : '1px solid var(--color-border)',
+                            backgroundColor: isSelected ? 'var(--color-gold-soft)' : 'var(--color-cream)',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.75rem'
+                          }}
+                        >
+                          <input
+                            type="radio"
+                            name="addressSelection"
+                            checked={isSelected}
+                            onChange={() => handleSelectSavedAddress(addr)}
+                            style={{ accentColor: 'var(--color-navy)', width: '16px', height: '16px' }}
+                          />
+                          <div>
+                            <span style={{ fontSize: '0.75rem', fontWeight: '800', backgroundColor: 'var(--color-navy)', color: '#FFFFFF', padding: '0.15rem 0.55rem', borderRadius: 'var(--radius-full)', textTransform: 'uppercase', marginRight: '0.4rem' }}>
+                              {addr.label || 'Home'}
+                            </span>
+                            <span style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--color-navy)' }}>
+                              {addr.fullAddress}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {/* Manual Entry Option */}
+                    <div
+                      onClick={handleSelectManualEntry}
+                      style={{
+                        padding: '0.75rem 1rem',
+                        borderRadius: 'var(--radius-sm)',
+                        border: selectedAddressId === 'manual' ? '2px solid var(--color-gold-hover)' : '1px dashed var(--color-border)',
+                        backgroundColor: selectedAddressId === 'manual' ? 'var(--color-gold-soft)' : 'transparent',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem',
+                        fontSize: '0.85rem',
+                        fontWeight: '700',
+                        color: 'var(--color-navy)'
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name="addressSelection"
+                        checked={selectedAddressId === 'manual'}
+                        onChange={handleSelectManualEntry}
+                        style={{ accentColor: 'var(--color-navy)', width: '16px', height: '16px' }}
+                      />
+                      <Plus size={16} /> <span>➕ High-speed Manual Address Input</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Manual Input Fields */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: 'var(--color-navy)', marginBottom: '0.35rem' }}>

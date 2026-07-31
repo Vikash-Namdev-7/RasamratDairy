@@ -313,6 +313,23 @@ export const Navbar = ({ currentPath, onNavigate }) => {
                     }}
                   >
                     <a
+                      href="/profile"
+                      onClick={(e) => handleLinkClick(e, '/profile')}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        padding: '0.55rem 1rem',
+                        color: '#CBD5E1',
+                        fontSize: '0.85rem',
+                        fontWeight: '600',
+                        textDecoration: 'none'
+                      }}
+                    >
+                      <User size={15} color="var(--color-gold)" />
+                      <span>Meri Profile</span>
+                    </a>
+                    <a
                       href="/my-orders"
                       onClick={(e) => handleLinkClick(e, '/my-orders')}
                       style={{
