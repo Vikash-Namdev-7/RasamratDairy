@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useCart } from '../../../context/CartContext';
 import { ShieldCheck, Clock, ArrowRight, ArrowLeft, CheckCircle, Truck } from '../../../components/Icons';
 import { formatCurrency } from '../../../utils/formatCurrency';
+import ordersApi from '../../../api/orders.api';
 
 export const Checkout = ({ onNavigate }) => {
   const { cartItems, selectedZone, subtotal, deliveryFee, grandTotal, clearCart } = useCart();
@@ -22,6 +23,7 @@ export const Checkout = ({ onNavigate }) => {
     paymentMethod: 'cod', // COD strictly active
   });
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
   const handleChange = (e) => {
@@ -37,19 +39,47 @@ export const Checkout = ({ onNavigate }) => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrorMsg('');
+
     if (!formData.fullName.trim() || !formData.phone.trim() || !formData.address.trim()) {
       setErrorMsg('Kripya Naam, Phone Number, aur Delivery Address bharein.');
       return;
     }
 
-    const randomNum = Math.floor(1000 + Math.random() * 9000);
-    const orderId = `#RD-${randomNum}`;
+    setIsSubmitting(true);
 
-    clearCart();
-    if (onNavigate) {
-      onNavigate(`/order-confirmation?id=${encodeURIComponent(orderId)}`);
+    const fullAddress = `${formData.address.trim()}${
+      formData.landmark.trim() ? `, Landmark: ${formData.landmark.trim()}` : ''
+    }`;
+
+    const payload = {
+      items: cartItems.map((i) => ({
+        productId: i.id || i._id,
+        qty: i.qty
+      })),
+      zoneId: selectedZone.id || selectedZone._id,
+      address: fullAddress,
+      deliveryTimeOption: formData.deliveryTimeOption,
+      customTimeNote: formData.customTimeNote
+    };
+
+    try {
+      const res = await ordersApi.createOrder(payload);
+      if (res.data && res.data.success) {
+        const orderData = res.data.data;
+        const orderIdParam = orderData._id || orderData.orderNumber || 'RD-1001';
+        clearCart();
+        setIsSubmitting(false);
+        if (onNavigate) {
+          onNavigate(`/order-confirmation?id=${encodeURIComponent(orderIdParam)}`);
+        }
+      }
+    } catch (err) {
+      setIsSubmitting(false);
+      const backendError = err.response?.data?.message || 'Order place nahi ho paaya. Details re-check karein.';
+      setErrorMsg(backendError);
     }
   };
 
@@ -99,140 +129,200 @@ export const Checkout = ({ onNavigate }) => {
           </button>
         </div>
 
-        {/* Page Header */}
+        {/* Page Title & Micro Trust Strip */}
         <div style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <h1 className="font-display" style={{ fontSize: '1.65rem', color: 'var(--color-navy)', fontWeight: '800', lineHeight: '1.2' }}>
-              Final Checkout
+            <h1 className="font-display" style={{ fontSize: '1.85rem', color: 'var(--color-navy)', fontWeight: '800', lineHeight: 1.2 }}>
+              Delivery Details & Checkout
             </h1>
-            <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '0.2rem' }}>
-              Apna delivery address bharein aur order place karein.
+            <p className="text-muted" style={{ fontSize: '0.875rem', marginTop: '0.2rem' }}>
+              Subah 7 Baje Tak Fresh Delivery • Cash / UPI on Delivery
             </p>
           </div>
 
-          {/* Selected Zone Pill Badge */}
-          <div
-            style={{
-              backgroundColor: 'var(--color-cream-card)',
-              border: '1.5px solid var(--color-gold)',
-              borderRadius: 'var(--radius-full)',
-              padding: '0.4rem 0.95rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              boxShadow: 'var(--shadow-sm)'
-            }}
-          >
-            <Truck size={16} color="var(--color-gold-hover)" />
-            <span style={{ fontSize: '0.825rem', fontWeight: '700', color: 'var(--color-navy)' }}>
-              {selectedZone ? selectedZone.name : 'Selected Zone'}
-            </span>
-            <button
-              type="button"
-              onClick={() => onNavigate && onNavigate('/cart')}
-              style={{ background: 'none', border: 'none', color: 'var(--color-wine)', fontWeight: '700', fontSize: '0.775rem', cursor: 'pointer', marginLeft: '0.25rem' }}
-            >
-              Change
-            </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: 'var(--color-cream-card)', padding: '0.4rem 0.85rem', borderRadius: 'var(--radius-full)', border: '1.5px solid var(--color-border)', boxShadow: 'var(--shadow-sm)' }}>
+            <ShieldCheck size={18} color="var(--color-gold-hover)" />
+            <span style={{ fontSize: '0.775rem', fontWeight: '700', color: 'var(--color-navy)' }}>100% Secure Checkout</span>
           </div>
         </div>
 
-        {errorMsg && (
-          <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid #EF4444', color: '#DC2626', borderRadius: 'var(--radius-sm)', padding: '0.75rem 1rem', marginBottom: '1.25rem', fontSize: '0.875rem', fontWeight: '600' }}>
-            ⚠️ {errorMsg}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '1.5rem', alignItems: 'start' }} className="products-listing-layout">
+        {/* Main 2-Column Split: Form (Left) + Order Summary (Right) */}
+        <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '2rem', alignItems: 'start' }} className="products-listing-layout">
           
-          {/* Left Column: Step-by-Step Checkout Sections */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          {/* Left Column: Customer & Delivery Details Form */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             
-            {/* Step 1: Customer Details & Address */}
-            <div style={{ backgroundColor: 'var(--color-cream-card)', borderRadius: 'var(--radius-md)', border: '1.5px solid var(--color-border)', padding: '1.25rem', boxShadow: 'var(--shadow-sm)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '1rem', paddingBottom: '0.6rem', borderBottom: '1px solid var(--color-border)' }}>
-                <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'var(--color-navy)', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: '800' }}>
-                  1
-                </div>
-                <h3 className="font-display" style={{ fontSize: '1.1rem', color: 'var(--color-navy)', fontWeight: '700' }}>
-                  Delivery Address & Contact
-                </h3>
+            {/* Error Banner */}
+            {errorMsg && (
+              <div
+                style={{
+                  backgroundColor: 'var(--color-error-bg)',
+                  border: '1.5px solid var(--color-error-border)',
+                  color: 'var(--color-error)',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '0.85rem 1.1rem',
+                  fontSize: '0.875rem',
+                  fontWeight: '700',
+                  animation: 'slideDownFade 0.25s ease'
+                }}
+              >
+                ⚠️ {errorMsg}
               </div>
+            )}
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem', marginBottom: '0.85rem' }}>
+            {/* Section 1: Customer Contact Info */}
+            <div
+              style={{
+                backgroundColor: 'var(--color-cream-card)',
+                borderRadius: 'var(--radius-md)',
+                border: '1.5px solid var(--color-border)',
+                padding: '1.5rem',
+                boxShadow: 'var(--shadow-sm)'
+              }}
+            >
+              <h3 className="font-display" style={{ fontSize: '1.15rem', color: 'var(--color-navy)', fontWeight: '700', marginBottom: '1rem', paddingBottom: '0.5rem', borderBottom: '1px solid var(--color-border)' }}>
+                1. Grahak Ki Jankari (Contact Info)
+              </h3>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
-                  <label style={{ fontSize: '0.775rem', fontWeight: '700', color: 'var(--color-navy)', display: 'block', marginBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-                    Full Name *
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: 'var(--color-navy)', marginBottom: '0.35rem' }}>
+                    Pura Naam *
                   </label>
                   <input
                     type="text"
                     name="fullName"
                     required
-                    placeholder="e.g., Rahul Sharma"
+                    placeholder="e.g. Ramesh Patel"
                     value={formData.fullName}
                     onChange={handleChange}
-                    style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontSize: '0.85rem', outline: 'none', backgroundColor: 'var(--color-cream)' }}
+                    style={{
+                      width: '100%',
+                      padding: '0.65rem 0.85rem',
+                      borderRadius: 'var(--radius-sm)',
+                      border: '1.5px solid var(--color-border)',
+                      fontSize: '0.875rem',
+                      outline: 'none',
+                      backgroundColor: 'var(--color-cream)'
+                    }}
                   />
                 </div>
+
                 <div>
-                  <label style={{ fontSize: '0.775rem', fontWeight: '700', color: 'var(--color-navy)', display: 'block', marginBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-                    Mobile Phone *
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: 'var(--color-navy)', marginBottom: '0.35rem' }}>
+                    Mobile Number *
                   </label>
                   <input
                     type="tel"
                     name="phone"
                     required
-                    placeholder="+91 9876543210"
+                    placeholder="e.g. 98260 12345"
                     value={formData.phone}
                     onChange={handleChange}
-                    style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontSize: '0.85rem', outline: 'none', backgroundColor: 'var(--color-cream)' }}
+                    style={{
+                      width: '100%',
+                      padding: '0.65rem 0.85rem',
+                      borderRadius: 'var(--radius-sm)',
+                      border: '1.5px solid var(--color-border)',
+                      fontSize: '0.875rem',
+                      outline: 'none',
+                      backgroundColor: 'var(--color-cream)'
+                    }}
                   />
                 </div>
               </div>
+            </div>
 
-              <div style={{ marginBottom: '0.85rem' }}>
-                <label style={{ fontSize: '0.775rem', fontWeight: '700', color: 'var(--color-navy)', display: 'block', marginBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-                  House / Flat / Street Address *
-                </label>
-                <textarea
-                  name="address"
-                  required
-                  rows={2}
-                  placeholder="House No., Building Name, Street Address"
-                  value={formData.address}
-                  onChange={handleChange}
-                  style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontSize: '0.85rem', outline: 'none', fontFamily: 'inherit', backgroundColor: 'var(--color-cream)' }}
-                />
-              </div>
+            {/* Section 2: Full Address */}
+            <div
+              style={{
+                backgroundColor: 'var(--color-cream-card)',
+                borderRadius: 'var(--radius-md)',
+                border: '1.5px solid var(--color-border)',
+                padding: '1.5rem',
+                boxShadow: 'var(--shadow-sm)'
+              }}
+            >
+              <h3 className="font-display" style={{ fontSize: '1.15rem', color: 'var(--color-navy)', fontWeight: '700', marginBottom: '1rem', paddingBottom: '0.5rem', borderBottom: '1px solid var(--color-border)' }}>
+                2. Delivery Address (Pura Pata)
+              </h3>
 
-              <div>
-                <label style={{ fontSize: '0.775rem', fontWeight: '700', color: 'var(--color-navy)', display: 'block', marginBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-                  Landmark (Optional)
-                </label>
-                <input
-                  type="text"
-                  name="landmark"
-                  placeholder="Near Temple / School / Park"
-                  value={formData.landmark}
-                  onChange={handleChange}
-                  style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontSize: '0.85rem', outline: 'none', backgroundColor: 'var(--color-cream)' }}
-                />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: 'var(--color-navy)', marginBottom: '0.35rem' }}>
+                    Ghar / Plot / Flat Number & Colony Name *
+                  </label>
+                  <textarea
+                    name="address"
+                    required
+                    rows={2}
+                    placeholder="e.g. House No 45, Nayapura Main Road, Near Central Park"
+                    value={formData.address}
+                    onChange={handleChange}
+                    style={{
+                      width: '100%',
+                      padding: '0.65rem 0.85rem',
+                      borderRadius: 'var(--radius-sm)',
+                      border: '1.5px solid var(--color-border)',
+                      fontSize: '0.875rem',
+                      outline: 'none',
+                      resize: 'vertical',
+                      backgroundColor: 'var(--color-cream)'
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: 'var(--color-navy)', marginBottom: '0.35rem' }}>
+                    Landmark / Paas Ki Jagah (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    name="landmark"
+                    placeholder="e.g. Mandir ke paas, Water tank ke samne"
+                    value={formData.landmark}
+                    onChange={handleChange}
+                    style={{
+                      width: '100%',
+                      padding: '0.65rem 0.85rem',
+                      borderRadius: 'var(--radius-sm)',
+                      border: '1.5px solid var(--color-border)',
+                      fontSize: '0.875rem',
+                      outline: 'none',
+                      backgroundColor: 'var(--color-cream)'
+                    }}
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Step 2: Delivery Preference */}
-            <div style={{ backgroundColor: 'var(--color-cream-card)', borderRadius: 'var(--radius-md)', border: '1.5px solid var(--color-border)', padding: '1.25rem', boxShadow: 'var(--shadow-sm)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '1rem', paddingBottom: '0.6rem', borderBottom: '1px solid var(--color-border)' }}>
-                <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'var(--color-navy)', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: '800' }}>
-                  2
-                </div>
-                <h3 className="font-display" style={{ fontSize: '1.1rem', color: 'var(--color-navy)', fontWeight: '700' }}>
-                  Delivery Time Preference
-                </h3>
-              </div>
+            {/* Section 3: Delivery Timing Preference */}
+            <div
+              style={{
+                backgroundColor: 'var(--color-cream-card)',
+                borderRadius: 'var(--radius-md)',
+                border: '1.5px solid var(--color-border)',
+                padding: '1.5rem',
+                boxShadow: 'var(--shadow-sm)'
+              }}
+            >
+              <h3 className="font-display" style={{ fontSize: '1.15rem', color: 'var(--color-navy)', fontWeight: '700', marginBottom: '1rem', paddingBottom: '0.5rem', borderBottom: '1px solid var(--color-border)' }}>
+                3. Delivery Timing Options
+              </h3>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', marginBottom: '0.75rem' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', padding: '0.65rem 0.85rem', borderRadius: 'var(--radius-sm)', border: formData.deliveryTimeOption === 'asap' ? '2px solid var(--color-navy)' : '1px solid var(--color-border)', backgroundColor: formData.deliveryTimeOption === 'asap' ? 'var(--color-cream)' : 'transparent', cursor: 'pointer' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                <label
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    padding: '0.85rem 1rem',
+                    borderRadius: 'var(--radius-sm)',
+                    border: formData.deliveryTimeOption === 'asap' ? '2px solid var(--color-gold-hover)' : '1px solid var(--color-border)',
+                    backgroundColor: formData.deliveryTimeOption === 'asap' ? 'var(--color-gold-soft)' : 'var(--color-cream)',
+                    cursor: 'pointer'
+                  }}
+                >
                   <input
                     type="radio"
                     name="deliveryTimeOption"
@@ -242,162 +332,125 @@ export const Checkout = ({ onNavigate }) => {
                     style={{ accentColor: 'var(--color-navy)', width: '16px', height: '16px' }}
                   />
                   <div>
-                    <span style={{ fontSize: '0.875rem', fontWeight: '700', color: 'var(--color-navy)', display: 'block' }}>Jaldi Se Jaldi (Express Delivery)</span>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Agli delivery batch me fast dispatch (approx 2-4 ghante)</span>
+                    <div style={{ fontSize: '0.9rem', fontWeight: '800', color: 'var(--color-navy)' }}>
+                      ⚡ Jald Se Jald (Within 45-60 Minutes)
+                    </div>
+                    <div style={{ fontSize: '0.775rem', color: 'var(--color-text-muted)', marginTop: '0.1rem' }}>
+                      Farm se turant fresh pack hokar niklega.
+                    </div>
                   </div>
                 </label>
 
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', padding: '0.65rem 0.85rem', borderRadius: 'var(--radius-sm)', border: formData.deliveryTimeOption === 'flexible-time' ? '2px solid var(--color-navy)' : '1px solid var(--color-border)', backgroundColor: formData.deliveryTimeOption === 'flexible-time' ? 'var(--color-cream)' : 'transparent', cursor: 'pointer' }}>
+                <label
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    padding: '0.85rem 1rem',
+                    borderRadius: 'var(--radius-sm)',
+                    border: formData.deliveryTimeOption === 'morning' ? '2px solid var(--color-gold-hover)' : '1px solid var(--color-border)',
+                    backgroundColor: formData.deliveryTimeOption === 'morning' ? 'var(--color-gold-soft)' : 'var(--color-cream)',
+                    cursor: 'pointer'
+                  }}
+                >
                   <input
                     type="radio"
                     name="deliveryTimeOption"
-                    value="flexible-time"
-                    checked={formData.deliveryTimeOption === 'flexible-time'}
+                    value="morning"
+                    checked={formData.deliveryTimeOption === 'morning'}
                     onChange={handleChange}
                     style={{ accentColor: 'var(--color-navy)', width: '16px', height: '16px' }}
                   />
                   <div>
-                    <span style={{ fontSize: '0.875rem', fontWeight: '700', color: 'var(--color-navy)', display: 'block' }}>Specific Time Window Chunein</span>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Apne anusar delivery timing note likhein</span>
-                  </div>
-                </label>
-              </div>
-
-              {formData.deliveryTimeOption === 'flexible-time' && (
-                <div style={{ marginTop: '0.5rem' }}>
-                  <input
-                    type="text"
-                    name="customTimeNote"
-                    placeholder="e.g., Deliver between 5:00 PM and 7:00 PM"
-                    value={formData.customTimeNote}
-                    onChange={handleChange}
-                    style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontSize: '0.85rem', backgroundColor: 'var(--color-cream)' }}
-                  />
-                </div>
-              )}
-
-              <p style={{ fontSize: '0.725rem', color: 'var(--color-text-muted)', marginTop: '0.65rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                <Clock size={14} color="var(--color-gold)" />
-                <span>Note: Dukaan owner order accept karne ke baad exact delivery time confirm karenge.</span>
-              </p>
-            </div>
-
-            {/* Step 3: Payment Method */}
-            <div style={{ backgroundColor: 'var(--color-cream-card)', borderRadius: 'var(--radius-md)', border: '1.5px solid var(--color-border)', padding: '1.25rem', boxShadow: 'var(--shadow-sm)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '1rem', paddingBottom: '0.6rem', borderBottom: '1px solid var(--color-border)' }}>
-                <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'var(--color-navy)', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: '800' }}>
-                  3
-                </div>
-                <h3 className="font-display" style={{ fontSize: '1.1rem', color: 'var(--color-navy)', fontWeight: '700' }}>
-                  Payment Options
-                </h3>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-                {/* Active COD Option */}
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', padding: '0.65rem 0.85rem', borderRadius: 'var(--radius-sm)', border: '2px solid var(--color-navy)', backgroundColor: 'var(--color-cream)', cursor: 'pointer' }}>
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value="cod"
-                    checked={true}
-                    readOnly
-                    style={{ accentColor: 'var(--color-navy)', width: '16px', height: '16px' }}
-                  />
-                  <div style={{ flex: 1 }}>
-                    <span style={{ fontSize: '0.875rem', fontWeight: '700', color: 'var(--color-navy)', display: 'block' }}>Cash on Delivery (COD)</span>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Doodh milne par cash ya delivery partner ke QR par pay karein</span>
-                  </div>
-                  <span className="badge-wine" style={{ fontSize: '0.65rem' }}>Active</span>
-                </label>
-
-                {/* Disabled Online Payment (UPI) Option */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', padding: '0.65rem 0.85rem', borderRadius: 'var(--radius-sm)', border: '1.5px dashed var(--color-border)', backgroundColor: '#F8FAFC', opacity: 0.6, cursor: 'not-allowed' }}>
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value="upi"
-                    disabled={true}
-                    checked={false}
-                    style={{ width: '16px', height: '16px', cursor: 'not-allowed' }}
-                  />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <span style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--color-text-muted)' }}>Online Payment (UPI / Cards)</span>
-                      <span className="badge-gold" style={{ fontSize: '0.6rem', padding: '0.1rem 0.35rem' }}>Coming Soon</span>
+                    <div style={{ fontSize: '0.9rem', fontWeight: '800', color: 'var(--color-navy)' }}>
+                      🌅 Kal Subah Early Morning Slot (6:00 AM - 7:30 AM)
                     </div>
-                    <span style={{ fontSize: '0.725rem', color: 'var(--color-text-light)' }}>Real payment gateway integration aane par active hoga</span>
+                    <div style={{ fontSize: '0.775rem', color: 'var(--color-text-muted)', marginTop: '0.1rem' }}>
+                      Rozana ki subah ki chai ke liye fresh doodh batch.
+                    </div>
                   </div>
-                </div>
+                </label>
               </div>
             </div>
 
           </div>
 
-          {/* Right Column: Sticky Order Summary & Confirmation CTA */}
-          <div
-            style={{
-              backgroundColor: 'var(--color-cream-card)',
-              borderRadius: 'var(--radius-md)',
-              border: '1.5px solid var(--color-border)',
-              padding: '1.25rem',
-              position: 'sticky',
-              top: '90px',
-              boxShadow: 'var(--shadow-md)'
-            }}
-          >
-            <h3 className="font-display" style={{ fontSize: '1.1rem', color: 'var(--color-navy)', fontWeight: '700', marginBottom: '0.85rem', paddingBottom: '0.5rem', borderBottom: '1px solid var(--color-border)' }}>
-              Order Summary ({cartItems.length} {cartItems.length === 1 ? 'Item' : 'Items'})
-            </h3>
+          {/* Right Column: Order Summary & Place Order CTA */}
+          <div style={{ position: 'sticky', top: '90px' }}>
+            <div
+              style={{
+                backgroundColor: 'var(--color-cream-card)',
+                borderRadius: 'var(--radius-md)',
+                border: '1.5px solid var(--color-border)',
+                padding: '1.5rem',
+                boxShadow: 'var(--shadow-md)'
+              }}
+            >
+              <h3 className="font-display" style={{ fontSize: '1.25rem', color: 'var(--color-navy)', fontWeight: '800', marginBottom: '1rem', paddingBottom: '0.65rem', borderBottom: '1.5px solid var(--color-border)' }}>
+                Order Summary ({cartItems.length} Items)
+              </h3>
 
-            {/* Items List with Thumbnails */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: '1rem', maxHeight: '200px', overflowY: 'auto' }} className="hide-scrollbar">
-              {cartItems.map((item) => (
-                <div key={item.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.825rem', gap: '0.5rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <img src={item.image} alt={item.name} style={{ width: '36px', height: '36px', borderRadius: '6px', objectFit: 'cover', backgroundColor: '#F3ECE1' }} />
-                    <div>
-                      <div style={{ color: 'var(--color-navy)', fontWeight: '700' }}>{item.name}</div>
-                      <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>Qty: {item.quantity} • {item.unit}</div>
+              {/* Items List Snapshot */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '220px', overflowY: 'auto', marginBottom: '1.25rem', paddingRight: '0.25rem' }}>
+                {cartItems.map((item) => (
+                  <div key={item.id || item._id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                      <img src={item.image} alt={item.name} style={{ width: '36px', height: '36px', borderRadius: '6px', objectFit: 'cover' }} />
+                      <div>
+                        <div style={{ fontWeight: '700', color: 'var(--color-navy)' }}>{item.name}</div>
+                        <div style={{ fontSize: '0.725rem', color: 'var(--color-text-muted)' }}>{item.qty} × ₹{item.price}</div>
+                      </div>
+                    </div>
+                    <div style={{ fontWeight: '800', color: 'var(--color-navy)' }}>
+                      {formatCurrency(item.price * item.qty)}
                     </div>
                   </div>
-                  <span style={{ fontWeight: '800', color: 'var(--color-navy)' }}>
-                    {formatCurrency(item.price * item.quantity)}
-                  </span>
+                ))}
+              </div>
+
+              {/* Zone Tag */}
+              <div style={{ backgroundColor: 'var(--color-cream)', padding: '0.65rem 0.85rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', marginBottom: '1rem' }}>
+                <div style={{ fontSize: '0.725rem', color: 'var(--color-text-muted)', fontWeight: '700', textTransform: 'uppercase' }}>Delivery Area</div>
+                <div style={{ fontSize: '0.85rem', fontWeight: '800', color: 'var(--color-navy)', marginTop: '0.1rem' }}>{selectedZone?.name}</div>
+              </div>
+
+              {/* Bill Breakdown */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.25rem', fontSize: '0.875rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--color-text-muted)' }}>
+                  <span>Subtotal</span>
+                  <span>{formatCurrency(subtotal)}</span>
                 </div>
-              ))}
-            </div>
-
-            {/* Cost Breakdown */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.25rem', paddingTop: '0.65rem', borderTop: '1px dashed var(--color-border)', fontSize: '0.85rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--color-text-muted)' }}>
-                <span>Subtotal</span>
-                <span>{formatCurrency(subtotal)}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--color-text-muted)' }}>
+                  <span>Delivery Charge ({selectedZone?.distanceLabel})</span>
+                  <span>{deliveryFee === 0 ? 'FREE' : formatCurrency(deliveryFee)}</span>
+                </div>
+                <div style={{ height: '1px', backgroundColor: 'var(--color-border)', margin: '0.35rem 0' }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: '900', fontSize: '1.15rem', color: 'var(--color-navy)' }}>
+                  <span>Total Payable</span>
+                  <span>{formatCurrency(grandTotal)}</span>
+                </div>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--color-text-muted)' }}>
-                <span>Delivery ({selectedZone ? selectedZone.name : 'Selected Area'})</span>
-                <span style={{ color: deliveryFee === 0 ? '#15803D' : 'var(--color-navy)', fontWeight: '600' }}>
-                  {deliveryFee === 0 ? 'FREE' : formatCurrency(deliveryFee)}
-                </span>
-              </div>
-              <div style={{ height: '1px', backgroundColor: 'var(--color-border)', margin: '0.35rem 0' }} />
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.15rem', fontWeight: '800', color: 'var(--color-navy)' }}>
-                <span>Grand Total</span>
-                <span>{formatCurrency(grandTotal)}</span>
-              </div>
-            </div>
 
-            <button
-              type="submit"
-              className="btn btn-wine"
-              style={{ width: '100%', padding: '0.85rem', fontSize: '0.925rem' }}
-            >
-              Confirm & Place Order (COD) <CheckCircle size={16} />
-            </button>
+              {/* Payment Mode Note */}
+              <div style={{ backgroundColor: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: 'var(--radius-sm)', padding: '0.65rem 0.85rem', marginBottom: '1.25rem' }}>
+                <div style={{ fontSize: '0.8rem', fontWeight: '800', color: 'var(--color-success)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <Truck size={16} color="var(--color-success)" /> Payment Method: Cash / UPI on Delivery
+                </div>
+                <div style={{ fontSize: '0.725rem', color: 'var(--color-text-muted)', marginTop: '0.2rem' }}>
+                  Ghar par delivery ke waqt cash ya QR code scan karke UPI payment karein.
+                </div>
+              </div>
 
-            <div style={{ marginTop: '0.85rem', textAlign: 'center', fontSize: '0.725rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}>
-              <ShieldCheck size={15} color="var(--color-wine)" />
-              <span>100% Shuddh & Fresh Guarantee</span>
+              {/* Submit CTA */}
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="btn btn-gold"
+                style={{ width: '100%', padding: '0.85rem', fontSize: '1rem', fontWeight: '800' }}
+              >
+                {isSubmitting ? 'Order Processing...' : `Order Place Karein (${formatCurrency(grandTotal)})`}
+              </button>
+
             </div>
           </div>
 

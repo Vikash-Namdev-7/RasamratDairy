@@ -1,12 +1,9 @@
+import axiosClient from './axiosClient';
+
 export const ordersApi = {
-  createOrder: async (orderData) => {
-    return {
-      success: true,
-      orderId: `ORD-${Math.floor(100000 + Math.random() * 900000)}`,
-      status: 'Confirmed',
-      ...orderData
-    };
-  }
+  createOrder: (data) => axiosClient.post('/orders', data),
+  getMyOrders: () => axiosClient.get('/orders/my'),
+  getOrderById: (id) => axiosClient.get(`/orders/${id}`)
 };
 
 export default ordersApi;

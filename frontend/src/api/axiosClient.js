@@ -59,6 +59,7 @@ export const axiosClient = {
   get: (endpoint, headers) => request('GET', endpoint, null, headers),
   post: (endpoint, body, headers) => request('POST', endpoint, body, headers),
   put: (endpoint, body, headers) => request('PUT', endpoint, body, headers),
+  patch: (endpoint, body, headers) => request('PATCH', endpoint, body, headers),
   delete: (endpoint, headers) => request('DELETE', endpoint, null, headers)
 };
 
