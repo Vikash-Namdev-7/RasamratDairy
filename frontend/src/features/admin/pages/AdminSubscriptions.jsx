@@ -111,7 +111,7 @@ export const AdminSubscriptions = () => {
   };
 
   return (
-    <div style={{ padding: '1.5rem', paddingBottom: '3.5rem' }}>
+    <div className="admin-page-container">
       
       {/* Toast Alert Banner */}
       {toastMessage && (

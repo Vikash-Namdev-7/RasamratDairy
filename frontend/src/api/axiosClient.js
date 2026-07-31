@@ -7,8 +7,14 @@ const getHeaders = (endpoint = '', customHeaders = {}) => {
     ...customHeaders
   };
 
-  // Smart Token Selector: Admin Token for Admin endpoints, Customer Token for Customer endpoints
-  if (endpoint.includes('/admin')) {
+  // Leak-proof Token Selector: Admin Token for Admin routes, Customer Token for Customer routes
+  const isAdminEndpoint =
+    endpoint.startsWith('/auth/admin') ||
+    endpoint.startsWith('/admin') ||
+    endpoint.includes('/api/auth/admin') ||
+    endpoint.includes('/api/admin');
+
+  if (isAdminEndpoint) {
     const adminToken = localStorage.getItem('rasamrat-admin-token');
     if (adminToken) {
       headers['Authorization'] = `Bearer ${adminToken}`;

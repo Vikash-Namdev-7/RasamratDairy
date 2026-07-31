@@ -1,7 +1,7 @@
 import React from 'react';
 
 export const AdminSettings = () => (
-  <div style={{ padding: '1.5rem' }}>
+  <div className="admin-page-container">
     <h2 className="font-display" style={{ fontSize: '1.5rem', color: 'var(--color-navy)', fontWeight: '700', marginBottom: '0.5rem' }}>
       Admin Settings
     </h2>

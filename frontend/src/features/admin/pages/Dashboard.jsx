@@ -34,7 +34,7 @@ export const Dashboard = ({ onNavigate }) => {
   };
 
   return (
-    <div style={{ padding: '1.5rem', paddingBottom: '3.5rem' }}>
+    <div className="admin-page-container">
       
       {/* Page Title & Tagline */}
       <div style={{ marginBottom: '1.5rem' }}>

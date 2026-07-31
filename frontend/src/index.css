@@ -87,6 +87,19 @@ body {
   animation: slideUpFade 0.4s ease-out forwards;
 }
 
+/* Admin Container Mobile Optimization */
+.admin-page-container {
+  padding: 1.5rem;
+  padding-bottom: 3.5rem;
+}
+
+@media (max-width: 768px) {
+  .admin-page-container {
+    padding: 0.85rem 0.75rem !important;
+    padding-bottom: 2.5rem !important;
+  }
+}
+
 /* Typography Utilities & Responsive Scaling */
 .font-display {
   font-family: var(--font-display);
@@ -233,6 +246,10 @@ body {
     font-size: 0.65rem;
     width: 16px;
     height: 16px;
+  }
+
+  .admin-name-text {
+    display: none !important;
   }
 }
 
@@ -733,7 +750,7 @@ body {
   }
 }
 
-/* Admin Layout & Mobile Navigation Drawer */
+/* Admin Layout & Mobile Off-Canvas Navigation Drawer */
 @media (max-width: 768px) {
   .admin-sidebar {
     position: fixed !important;
@@ -756,6 +773,8 @@ body {
   }
 
   .sidebar-close-btn {
-    display: block !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
   }
 }
