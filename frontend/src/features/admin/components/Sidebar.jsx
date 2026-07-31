@@ -1,7 +1,10 @@
 import React from 'react';
-import { ChevronRight, X } from '../../../components/Icons';
+import { ChevronRight, X, LogOut } from '../../../components/Icons';
+import { useAdminAuth } from '../../../context/AdminAuthContext';
 
 export const Sidebar = ({ currentPath, onNavigate, mobileOpen, onCloseMobile }) => {
+  const { logout } = useAdminAuth();
+
   const menu = [
     { label: 'Dashboard', path: '/admin/dashboard' },
     { label: 'Products', path: '/admin/products' },
@@ -112,8 +115,8 @@ export const Sidebar = ({ currentPath, onNavigate, mobileOpen, onCloseMobile }) 
           })}
         </nav>
 
-        {/* Customer Site Quick Back Switcher */}
-        <div style={{ paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+        {/* Bottom Actions: Customer Site & Admin Logout */}
+        <div style={{ paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           <button
             type="button"
             onClick={() => handleNav('/')}
@@ -134,6 +137,32 @@ export const Sidebar = ({ currentPath, onNavigate, mobileOpen, onCloseMobile }) 
             }}
           >
             <span>🌐 Customer Website</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              logout();
+              if (onNavigate) onNavigate('/admin/login');
+            }}
+            style={{
+              width: '100%',
+              padding: '0.5rem 0.75rem',
+              borderRadius: 'var(--radius-sm)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+              color: '#F87171',
+              fontSize: '0.8rem',
+              fontWeight: '700',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.4rem'
+            }}
+          >
+            <LogOut size={14} color="#F87171" />
+            <span>Logout Admin</span>
           </button>
         </div>
       </aside>

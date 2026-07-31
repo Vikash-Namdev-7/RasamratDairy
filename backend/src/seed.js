@@ -7,6 +7,7 @@ const Category = require('./models/Category');
 const Product = require('./models/Product');
 const Zone = require('./models/Zone');
 const Customer = require('./models/Customer');
+const Admin = require('./models/Admin');
 const Order = require('./models/Order');
 const Subscription = require('./models/Subscription');
 
@@ -20,6 +21,7 @@ const seedData = async () => {
     await Product.deleteMany({});
     await Zone.deleteMany({});
     await Customer.deleteMany({});
+    await Admin.deleteMany({});
     await Order.deleteMany({});
     await Subscription.deleteMany({});
 
@@ -125,8 +127,17 @@ const seedData = async () => {
       }
     ]);
 
-    console.log('🔑 Hashing password for test customer...');
+    console.log('🔑 Hashing passwords for customers & admin...');
     const testPasswordHash = await bcrypt.hash('customer123', 10);
+    const adminPasswordHash = await bcrypt.hash('admin123', 10);
+
+    console.log('🌱 Inserting Admin Account...');
+    await Admin.create({
+      name: 'Dukaan Admin',
+      email: 'admin@rasamrat.com',
+      passwordHash: adminPasswordHash,
+      role: 'super-admin'
+    });
 
     console.log('🌱 Inserting Customers...');
     const insertedCustomers = await Customer.insertMany([
@@ -223,7 +234,8 @@ const seedData = async () => {
     ]);
 
     console.log(`✅ Database Seeding Complete!`);
-    console.log(`📊 Test Login: customer@rasamrat.com / customer123`);
+    console.log(`👤 Customer Test Login: customer@rasamrat.com / customer123`);
+    console.log(`🛡️ Admin Test Login: admin@rasamrat.com / admin123`);
     process.exit(0);
   } catch (error) {
     console.error('❌ Seeding Failed:', error);

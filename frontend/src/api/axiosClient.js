@@ -1,14 +1,23 @@
 // Native Fetch API Client with Axios-compatible interface
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-const getHeaders = (customHeaders = {}) => {
+const getHeaders = (endpoint = '', customHeaders = {}) => {
   const headers = {
     'Content-Type': 'application/json',
     ...customHeaders
   };
-  const token = localStorage.getItem('rasamrat-customer-token');
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+
+  // Smart Token Selector: Admin Token for Admin endpoints, Customer Token for Customer endpoints
+  if (endpoint.includes('/admin')) {
+    const adminToken = localStorage.getItem('rasamrat-admin-token');
+    if (adminToken) {
+      headers['Authorization'] = `Bearer ${adminToken}`;
+    }
+  } else {
+    const customerToken = localStorage.getItem('rasamrat-customer-token');
+    if (customerToken) {
+      headers['Authorization'] = `Bearer ${customerToken}`;
+    }
   }
   return headers;
 };
@@ -18,7 +27,7 @@ const request = async (method, endpoint, body = null, customHeaders = {}) => {
   
   const options = {
     method,
-    headers: getHeaders(customHeaders)
+    headers: getHeaders(endpoint, customHeaders)
   };
 
   if (body) {

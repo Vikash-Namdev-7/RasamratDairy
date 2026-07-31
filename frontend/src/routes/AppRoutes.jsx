@@ -13,6 +13,7 @@ import MyOrders from '../features/customer/pages/MyOrders';
 import Login from '../features/customer/pages/Login';
 import Signup from '../features/customer/pages/Signup';
 import { useAuth } from '../context/AuthContext';
+import { useAdminAuth } from '../context/AdminAuthContext';
 
 import Dashboard from '../features/admin/pages/Dashboard';
 import AdminProducts from '../features/admin/pages/AdminProducts';
@@ -21,9 +22,11 @@ import AdminZones from '../features/admin/pages/AdminZones';
 import AdminOrders from '../features/admin/pages/AdminOrders';
 import AdminSubscriptions from '../features/admin/pages/AdminSubscriptions';
 import AdminSettings from '../features/admin/pages/AdminSettings';
+import AdminLogin from '../features/admin/pages/AdminLogin';
 
 export const AppRoutes = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated: isCustomerAuthenticated } = useAuth();
+  const { isAuthenticated: isAdminAuthenticated } = useAdminAuth();
   const [currentPath, setCurrentPath] = useState(window.location.pathname || '/');
 
   useEffect(() => {
@@ -40,13 +43,29 @@ export const AppRoutes = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // 1. Explicit Signup route (accessible without login)
+  // 1. Explicit Customer Signup route (accessible without customer login)
   if (currentPath === '/signup') {
     return <Signup onNavigate={navigate} />;
   }
 
-  // 2. Admin Routes Router (Admin control panel)
+  // 2. Dedicated Admin Login Route
+  if (currentPath === '/admin/login') {
+    if (isAdminAuthenticated) {
+      return (
+        <AdminLayout currentPath="/admin/dashboard" onNavigate={navigate}>
+          <Dashboard onNavigate={navigate} />
+        </AdminLayout>
+      );
+    }
+    return <AdminLogin onNavigate={navigate} />;
+  }
+
+  // 3. Protected Admin Control Panel Routes (Requires Admin Authentication)
   if (currentPath.startsWith('/admin')) {
+    if (!isAdminAuthenticated) {
+      return <AdminLogin onNavigate={navigate} />;
+    }
+
     const renderAdminPage = () => {
       if (currentPath === '/admin/products') {
         return <AdminProducts onNavigate={navigate} />;
@@ -76,12 +95,12 @@ export const AppRoutes = () => {
     );
   }
 
-  // 3. Unauthenticated Customer Protection: Website access directly shows Login screen first
-  if (!isAuthenticated) {
+  // 4. Unauthenticated Customer Protection: Website access directly shows Customer Login screen first
+  if (!isCustomerAuthenticated) {
     return <Login onNavigate={navigate} />;
   }
 
-  // 4. Explicit Login route when already authenticated -> Redirect to Home
+  // 5. Explicit Customer Login route when already authenticated -> Redirect to Home
   if (currentPath === '/login') {
     return (
       <CustomerLayout currentPath="/" onNavigate={navigate}>
@@ -90,7 +109,7 @@ export const AppRoutes = () => {
     );
   }
 
-  // 5. Authenticated Customer Routes Container
+  // 6. Authenticated Customer Routes Container
   const renderCustomerPage = () => {
     if (currentPath === '/' || currentPath === '') {
       return <Home onNavigate={navigate} />;

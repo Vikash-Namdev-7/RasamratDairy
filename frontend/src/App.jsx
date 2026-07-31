@@ -1,14 +1,17 @@
 import React from 'react';
 import { CartProvider } from './context/CartContext';
 import { AuthProvider } from './context/AuthContext';
+import { AdminAuthProvider } from './context/AdminAuthContext';
 import AppRoutes from './routes/AppRoutes';
 
 export function App() {
   return (
     <AuthProvider>
-      <CartProvider>
-        <AppRoutes />
-      </CartProvider>
+      <AdminAuthProvider>
+        <CartProvider>
+          <AppRoutes />
+        </CartProvider>
+      </AdminAuthProvider>
     </AuthProvider>
   );
 }
