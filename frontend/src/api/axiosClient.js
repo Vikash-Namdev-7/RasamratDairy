@@ -1,0 +1,50 @@
+// Native Fetch API Client with Axios-compatible interface
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+const getHeaders = (customHeaders = {}) => {
+  const headers = {
+    'Content-Type': 'application/json',
+    ...customHeaders
+  };
+  const token = localStorage.getItem('rasamrat-customer-token');
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+};
+
+const request = async (method, endpoint, body = null, customHeaders = {}) => {
+  const url = endpoint.startsWith('http') ? endpoint : `${BASE_URL}${endpoint}`;
+  
+  const options = {
+    method,
+    headers: getHeaders(customHeaders)
+  };
+
+  if (body) {
+    options.body = JSON.stringify(body);
+  }
+
+  const response = await fetch(url, options);
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    const error = new Error(data.message || `Request failed with status ${response.status}`);
+    error.response = {
+      status: response.status,
+      data
+    };
+    throw error;
+  }
+
+  return { data, status: response.status };
+};
+
+export const axiosClient = {
+  get: (endpoint, headers) => request('GET', endpoint, null, headers),
+  post: (endpoint, body, headers) => request('POST', endpoint, body, headers),
+  put: (endpoint, body, headers) => request('PUT', endpoint, body, headers),
+  delete: (endpoint, headers) => request('DELETE', endpoint, null, headers)
+};
+
+export default axiosClient;

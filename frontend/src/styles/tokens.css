@@ -1,0 +1,71 @@
+/* Phase 1 Design Tokens — Rasamrat Dairy System (Senior Polish) */
+:root {
+  /* Core Brand Color Palette (Phase 1 Exact Specs) */
+  --color-primary: #1C2B4A;
+  --color-primary-dark: #121D33;
+  --color-primary-light: #2A3C60;
+
+  --color-accent: #9B3A44;
+  --color-accent-dark: #7D2D35;
+  --color-accent-light: #B84A55;
+  --color-accent-soft: rgba(155, 58, 68, 0.08);
+
+  --color-navy: var(--color-primary);
+  --color-navy-dark: var(--color-primary-dark);
+  --color-navy-light: var(--color-primary-light);
+  --color-navy-glow: rgba(28, 43, 74, 0.15);
+
+  --color-wine: var(--color-accent);
+  --color-wine-dark: var(--color-accent-dark);
+  --color-wine-light: var(--color-accent-light);
+  --color-wine-soft: var(--color-accent-soft);
+  --color-wine-glow: rgba(155, 58, 68, 0.25);
+
+  --color-gold: #D4A542;
+  --color-gold-hover: #C29332;
+  --color-gold-light: #E5BE65;
+  --color-gold-soft: rgba(212, 165, 66, 0.14);
+  --color-gold-glow: rgba(212, 165, 66, 0.3);
+
+  --color-cream: #FBF8F2;
+  --color-cream-card: #FFFFFF;
+  --color-cream-alt: #F5EFE4;
+
+  /* Semantic Status Tokens (Harmonized Brand Palette) */
+  --color-success: #15803D;
+  --color-success-bg: rgba(34, 197, 94, 0.12);
+  --color-success-border: #22C55E;
+
+  --color-error: var(--color-accent);
+  --color-error-bg: var(--color-accent-soft);
+  --color-error-border: var(--color-accent-light);
+
+  /* Text & Border Tokens */
+  --color-text-main: var(--color-primary);
+  --color-text-muted: #626E82;
+  --color-text-light: #8E9AAB;
+  --color-border: #E8E3D9;
+  --color-border-hover: #D6CFBF;
+
+  /* Typography */
+  --font-display: 'Fraunces', serif;
+  --font-body: 'Inter', sans-serif;
+
+  /* Elevation & Shadows */
+  --shadow-sm: 0 2px 8px rgba(28, 43, 74, 0.04);
+  --shadow-md: 0 8px 24px rgba(28, 43, 74, 0.08);
+  --shadow-strong: 0 16px 36px rgba(28, 43, 74, 0.14);
+  --shadow-gold: 0 8px 20px rgba(212, 165, 66, 0.25);
+  --shadow-wine: 0 8px 20px rgba(155, 58, 68, 0.25);
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 28px;
+  --radius-full: 9999px;
+
+  /* Transitions */
+  --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-bounce: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
