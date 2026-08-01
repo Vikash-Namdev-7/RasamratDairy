@@ -40,7 +40,7 @@ export const SocketProvider = ({ children }) => {
           const mod = await import('socket.io-client');
           ioFunc = mod.io || mod.default;
         } catch (err) {
-          console.warn('⚠️ socket.io-client not installed yet on frontend.');
+          console.warn('socket.io-client not installed yet on frontend.');
           return;
         }
       }
@@ -56,7 +56,7 @@ export const SocketProvider = ({ children }) => {
       });
 
       socketInstance.on('connect', () => {
-        console.log('⚡ Connected to Rasamrat Real-time Socket Server');
+        console.log('Connected to Rasamrat Real-time Socket Server');
         setIsConnected(true);
       });
 
@@ -65,7 +65,7 @@ export const SocketProvider = ({ children }) => {
       });
 
       socketInstance.on('connect_error', (err) => {
-        console.warn('🔒 Socket connection warning:', err.message);
+        console.warn('Socket connection warning:', err.message);
         setIsConnected(false);
       });
 

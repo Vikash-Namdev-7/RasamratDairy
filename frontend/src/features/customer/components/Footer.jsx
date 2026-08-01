@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronRight } from '../../../components/Icons';
+import { ChevronRight, MapPin, Phone, Clock } from '../../../components/Icons';
 
 export const Footer = ({ onNavigate }) => {
   const handleLinkClick = (e, path) => {
@@ -107,16 +107,16 @@ export const Footer = ({ onNavigate }) => {
           <div className="footer-col">
             <h4 className="footer-heading">Contact & Support</h4>
             <ul className="footer-list static-details-list">
-              <li>
-                <span className="detail-icon">📍</span>
+              <li style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <MapPin size={14} color="var(--color-gold)" />
                 <span>Nayapura, Indore</span>
               </li>
-              <li>
-                <span className="detail-icon">📞</span>
+              <li style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <Phone size={14} color="var(--color-gold)" />
                 <span>+91 98765 43210</span>
               </li>
-              <li>
-                <span className="detail-icon">⏰</span>
+              <li style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <Clock size={14} color="var(--color-gold)" />
                 <span>Slot: 6-9 AM Daily</span>
               </li>
             </ul>

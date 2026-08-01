@@ -51,7 +51,7 @@ export const AuthProvider = ({ children }) => {
         return res.data;
       }
     } catch (err) {
-      console.warn('⚠️ Real Backend API offline or unseeded. Falling back to dev mock session...');
+      console.warn('Real Backend API offline or unseeded. Falling back to dev mock session...');
       
       // Fallback mock authentication for development testing
       if (cleanEmail === 'customer@rasamrat.com' || cleanEmail.includes('@')) {
@@ -85,7 +85,7 @@ export const AuthProvider = ({ children }) => {
         return res.data;
       }
     } catch (err) {
-      console.warn('⚠️ Real Backend API offline. Creating local mock customer session...');
+      console.warn('Real Backend API offline. Creating local mock customer session...');
       const mockUser = {
         id: 'cust-mock-' + Date.now(),
         name: formData.name,

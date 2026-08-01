@@ -49,7 +49,7 @@ export const AdminAuthProvider = ({ children }) => {
         return res.data;
       }
     } catch (err) {
-      console.warn('⚠️ Real Backend API offline or unseeded. Falling back to admin dev session...');
+      console.warn('Real Backend API offline or unseeded. Falling back to admin dev session...');
 
       if (cleanEmail === 'admin@rasamrat.com' || cleanEmail.includes('admin')) {
         const mockAdmin = {

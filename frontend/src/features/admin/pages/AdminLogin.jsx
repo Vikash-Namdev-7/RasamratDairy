@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAdminAuth } from '../../../context/AdminAuthContext';
-import { ShieldCheck, ArrowLeft } from '../../../components/Icons';
+import { ShieldCheck, ArrowLeft, AlertTriangle } from '../../../components/Icons';
 
 export const AdminLogin = ({ onNavigate }) => {
   const { login, loading } = useAdminAuth();
@@ -95,10 +95,14 @@ export const AdminLogin = ({ onNavigate }) => {
               padding: '0.65rem 0.85rem',
               marginBottom: '1.25rem',
               fontSize: '0.825rem',
-              fontWeight: '700'
+              fontWeight: '700',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem'
             }}
           >
-            ⚠️ {errorMessage}
+            <AlertTriangle size={15} color="#F87171" />
+            <span>{errorMessage}</span>
           </div>
         )}
 
@@ -208,10 +212,15 @@ export const AdminLogin = ({ onNavigate }) => {
               paddingTop: '0.85rem',
               borderTop: '1px solid rgba(255, 255, 255, 0.1)',
               fontSize: '0.75rem',
-              color: '#64748B'
+              color: '#64748B',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.35rem'
             }}
           >
-            🔒 Authorized store management staff only.
+            <ShieldCheck size={14} color="#64748B" />
+            <span>Authorized store management staff only.</span>
           </div>
 
         </form>

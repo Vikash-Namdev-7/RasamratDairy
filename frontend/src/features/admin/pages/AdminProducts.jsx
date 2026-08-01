@@ -56,7 +56,7 @@ export const AdminProducts = () => {
         setCategoriesList(catRes.data.data);
       }
     } catch (err) {
-      console.warn('⚠️ Real API offline or unseeded, using local fallback dataset for Admin Products');
+      console.warn('Real API offline or unseeded, using local fallback dataset for Admin Products');
     } finally {
       setLoading(false);
     }
@@ -161,12 +161,12 @@ export const AdminProducts = () => {
       if (modalMode === 'add') {
         const res = await adminProductsApi.createProduct(payload);
         if (res.data && res.data.success) {
-          showToast('🎉 Naya Product catalogue me add ho gaya!');
+          showToast('Naya Product catalogue me add ho gaya!');
         }
       } else {
         const res = await adminProductsApi.updateProduct(editingProductId, payload);
         if (res.data && res.data.success) {
-          showToast('✨ Product details update ho gayi!');
+          showToast('Product details update ho gayi!');
         }
       }
       await fetchProducts();
@@ -177,36 +177,49 @@ export const AdminProducts = () => {
           id: `prod-${Date.now()}`,
           ...payload,
           rating: 4.8,
-          reviewCount: 0
-        };
-        setProductsList((prev) => [newProd, ...prev]);
-        showToast('🎉 Naya Product add ho gaya (Dev Fallback)');
+          showToast('Product details update ho gayi!');
+        }
+      }
+      await fetchProducts();
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Product save nahi ho paaya.';
+      setValidationError(msg);
+      // Dev Fallback
+      if (modalMode === 'add') {
+        showToast('Naya Product add ho gaya (Dev Fallback)');
       } else {
-        setProductsList((prev) =>
-          prev.map((p) => ((p.id || p._id) === editingProductId ? { ...p, ...payload } : p))
-        );
-        showToast('✨ Product details update ho gayi!');
+        showToast('Product details update ho gayi!');
       }
     }
 
     setIsModalOpen(false);
   };
 
-  // Toggle Stock Availability
-  const handleToggleStock = async (id) => {
+  // Toggle Stock In-Stock / Out of Stock
+  const handleToggleStock = async (prodId) => {
     try {
-      const res = await adminProductsApi.toggleStock(id);
+      const res = await adminProductsApi.toggleStock(prodId);
+      let updatedStock = true;
       if (res.data && res.data.success) {
-        showToast(res.data.message || 'Stock status update ho gaya!');
+        updatedStock = res.data.data?.inStock;
       }
-      await fetchProducts();
-    } catch (err) {
       setProductsList((prev) =>
         prev.map((p) => {
-          if ((p.id || p._id) === id) {
-            const updatedStock = !p.inStock;
-            showToast(`📦 Product ab ${updatedStock ? 'In Stock' : 'Out of Stock'} mark ho gaya!`);
-            return { ...p, inStock: updatedStock };
+          if ((p.id || p._id) === prodId) {
+            const nextStock = res.data ? updatedStock : !p.inStock;
+            showToast(`Product ab ${nextStock ? 'In Stock' : 'Out of Stock'} mark ho gaya!`);
+            return { ...p, inStock: nextStock };
+          }
+          return p;
+        })
+      );
+    } catch (err) {
+      // Local fallback toggle
+      setProductsList((prev) =>
+        prev.map((p) => {
+          if ((p.id || p._id) === prodId) {
+            showToast(`Product ab ${!p.inStock ? 'In Stock' : 'Out of Stock'} mark ho gaya!`);
+            return { ...p, inStock: !p.inStock };
           }
           return p;
         })
@@ -214,35 +227,34 @@ export const AdminProducts = () => {
     }
   };
 
-  // Delete Product
+  // Delete Product (Admin)
   const handleDeleteProduct = async (product) => {
-    const confirmDelete = window.confirm(`Kya aap "${product.name}" ko sachme delete karna chahte hain?`);
-    if (!confirmDelete) return;
-
     const prodId = product.id || product._id;
+    const confirmDelete = window.confirm(`Kya aap "${product.name}" ko product list se delete karna chahte hain?`);
+    if (!confirmDelete) return;
 
     try {
       const res = await adminProductsApi.deleteProduct(prodId);
       if (res.data && res.data.success) {
-        showToast('🗑️ Product catalogue se remove ho gaya!');
+        showToast('Product catalogue se remove ho gaya!');
       }
       await fetchProducts();
     } catch (err) {
       setProductsList((prev) => prev.filter((p) => (p.id || p._id) !== prodId));
-      showToast('🗑️ Product catalogue se remove ho gaya!');
+      showToast('Product catalogue se remove ho gaya!');
     }
   };
 
   return (
     <div className="admin-page-container">
       
-      {/* Toast Alert Banner */}
+      {/* Toast Banner */}
       {toastMessage && (
         <div
           style={{
-            backgroundColor: toastMessage.includes('⚠️') ? 'var(--color-error-bg)' : 'var(--color-success-bg)',
-            border: toastMessage.includes('⚠️') ? '1.5px solid var(--color-error-border)' : '1.5px solid var(--color-success-border)',
-            color: toastMessage.includes('⚠️') ? 'var(--color-error)' : 'var(--color-success)',
+            backgroundColor: toastMessage.toLowerCase().includes('remove') || toastMessage.toLowerCase().includes('out of stock') ? 'var(--color-error-bg)' : 'var(--color-success-bg)',
+            border: toastMessage.toLowerCase().includes('remove') || toastMessage.toLowerCase().includes('out of stock') ? '1.5px solid var(--color-error-border)' : '1.5px solid var(--color-success-border)',
+            color: toastMessage.toLowerCase().includes('remove') || toastMessage.toLowerCase().includes('out of stock') ? 'var(--color-error)' : 'var(--color-success)',
             borderRadius: 'var(--radius-md)',
             padding: '0.75rem 1.25rem',
             marginBottom: '1.25rem',
@@ -510,13 +522,13 @@ export const AdminProducts = () => {
       <AdminModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={modalMode === 'add' ? '➕ Add New Product' : '✏️ Edit Product Details'}
+        title={modalMode === 'add' ? 'Add New Product' : 'Edit Product Details'}
       >
         <form onSubmit={handleSaveProduct} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           
           {validationError && (
             <div style={{ padding: '0.5rem 0.85rem', backgroundColor: 'var(--color-error-bg)', border: '1px solid var(--color-error-border)', color: 'var(--color-error)', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem', fontWeight: '700' }}>
-              ⚠️ {validationError}
+              {validationError}
             </div>
           )}
 

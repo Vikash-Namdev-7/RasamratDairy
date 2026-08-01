@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { mySubscriptions as initialSubscriptions } from '../../customer/data/mySubscriptions';
-import { Search, X, Check, CheckCircle, Clock, Truck, ShieldCheck, Sun, Moon, Trash } from '../../../components/Icons';
+import { Search, X, Check, CheckCircle, Clock, Truck, ShieldCheck, Sun, Moon, Trash, Phone } from '../../../components/Icons';
 import adminSubscriptionsApi from '../../../api/adminSubscriptions.api';
 
 export const AdminSubscriptions = () => {
@@ -24,7 +24,7 @@ export const AdminSubscriptions = () => {
         setSubscriptionsList(res.data.data);
       }
     } catch (err) {
-      console.warn('⚠️ Real Subscriptions API offline, using local fallback dataset for Admin Subscriptions');
+      console.warn('Real Subscriptions API offline, using local fallback dataset for Admin Subscriptions');
     } finally {
       setLoading(false);
     }
@@ -116,7 +116,7 @@ export const AdminSubscriptions = () => {
         prev.map((s) => {
           if ((s.id || s._id) === subId) {
             const nextStatus = s.status === 'active' ? 'paused' : 'active';
-            showToast(`✨ Subscription status ab '${nextStatus}' set ho gaya!`);
+            showToast(`Subscription status ab '${nextStatus}' set ho gaya!`);
             return { ...s, status: nextStatus };
           }
           return s;
@@ -134,14 +134,14 @@ export const AdminSubscriptions = () => {
     try {
       const res = await adminSubscriptionsApi.cancelSubscription(subId);
       if (res.data && res.data.success) {
-        showToast('🗑️ Subscription cancel ho gayi!');
+        showToast('Subscription cancel ho gayi!');
       }
       await fetchSubscriptions();
     } catch (err) {
       setSubscriptionsList((prev) =>
         prev.map((s) => ((s.id || s._id) === subId ? { ...s, status: 'cancelled' } : s))
       );
-      showToast('🗑️ Subscription cancel ho gayi!');
+      showToast('Subscription cancel ho gayi!');
     }
   };
 
@@ -152,9 +152,9 @@ export const AdminSubscriptions = () => {
       {toastMessage && (
         <div
           style={{
-            backgroundColor: toastMessage.includes('🗑️') ? 'var(--color-error-bg)' : 'var(--color-success-bg)',
-            border: toastMessage.includes('🗑️') ? '1.5px solid var(--color-error-border)' : '1.5px solid var(--color-success-border)',
-            color: toastMessage.includes('🗑️') ? 'var(--color-error)' : 'var(--color-success)',
+            backgroundColor: toastMessage.toLowerCase().includes('cancel') ? 'var(--color-error-bg)' : 'var(--color-success-bg)',
+            border: toastMessage.toLowerCase().includes('cancel') ? '1.5px solid var(--color-error-border)' : '1.5px solid var(--color-success-border)',
+            color: toastMessage.toLowerCase().includes('cancel') ? 'var(--color-error)' : 'var(--color-success)',
             borderRadius: 'var(--radius-md)',
             padding: '0.75rem 1.25rem',
             marginBottom: '1.25rem',
@@ -249,10 +249,10 @@ export const AdminSubscriptions = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', overflowX: 'auto' }}>
           {[
             { id: 'all', label: 'Sabhi' },
-            { id: 'morning', label: '🌅 Subah Slot' },
-            { id: 'evening', label: '🌙 Shaam Slot' },
-            { id: 'active', label: '🟢 Active Only' },
-            { id: 'paused', label: '🟡 Paused Only' }
+            { id: 'morning', label: 'Subah Slot' },
+            { id: 'evening', label: 'Shaam Slot' },
+            { id: 'active', label: 'Active Only' },
+            { id: 'paused', label: 'Paused Only' }
           ].map((tab) => (
             <button
               key={tab.id}
@@ -327,7 +327,9 @@ export const AdminSubscriptions = () => {
                       {/* Customer Info */}
                       <td style={{ padding: '0.9rem 1rem' }}>
                         <div style={{ fontWeight: '700', fontSize: '0.9rem', color: 'var(--color-primary)' }}>{sub.customerName}</div>
-                        <div style={{ fontSize: '0.775rem', color: 'var(--color-text-muted)' }}>📞 {sub.customerPhone}</div>
+                        <div style={{ fontSize: '0.775rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                          <Phone size={12} color="var(--color-text-muted)" /> <span>{sub.customerPhone}</span>
+                        </div>
                       </td>
 
                       {/* Variant & Litres */}

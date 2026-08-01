@@ -42,7 +42,7 @@ export const Products = ({ onNavigate }) => {
           }
         }
       } catch (err) {
-        console.warn('⚠️ Real API offline, using fallback dataset in Products page');
+        console.warn('Real API offline, using fallback dataset in Products page');
       } finally {
         if (isMounted) setLoading(false);
       }

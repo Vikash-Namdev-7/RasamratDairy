@@ -33,7 +33,7 @@ export const ProductDetail = ({ productId, onNavigate }) => {
           }
         }
       } catch (err) {
-        console.warn('⚠️ Real API offline, using fallback product detail dataset');
+        console.warn('Real API offline, using fallback product detail dataset');
       } finally {
         if (isMounted) setLoading(false);
       }

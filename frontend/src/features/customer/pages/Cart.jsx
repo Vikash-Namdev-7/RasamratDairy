@@ -32,7 +32,9 @@ export const Cart = ({ onNavigate }) => {
     return (
       <div style={{ paddingTop: '3.5rem', paddingBottom: '4.5rem', textAlign: 'center' }}>
         <div className="container" style={{ maxWidth: '460px' }}>
-          <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>🛒</div>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
+            <ShoppingBag size={56} color="var(--color-gold)" />
+          </div>
           <h2 className="font-display" style={{ fontSize: '1.6rem', color: 'var(--color-navy)', fontWeight: '700', marginBottom: '0.5rem' }}>
             Aapka Cart Khaali Hai
           </h2>

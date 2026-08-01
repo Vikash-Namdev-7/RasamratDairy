@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, MapPin, Plus, Trash, Edit, CheckCircle, ArrowLeft, ShieldCheck } from '../../../components/Icons';
+import { User, MapPin, Plus, Trash, Edit, CheckCircle, ArrowLeft, ShieldCheck, AlertTriangle } from '../../../components/Icons';
 import customerApi from '../../../api/customer.api';
 import zonesApi from '../../../api/zones.api';
 import { useAuth } from '../../../context/AuthContext';
@@ -52,7 +52,7 @@ export const Profile = ({ onNavigate }) => {
         }
       }
     } catch (err) {
-      console.warn('⚠️ Could not fetch real profile data');
+      console.warn('Could not fetch real profile data');
     } finally {
       setLoading(false);
     }
@@ -75,7 +75,7 @@ export const Profile = ({ onNavigate }) => {
       setIsUpdatingProfile(true);
       const res = await customerApi.updateProfile({ name, phone });
       if (res.data && res.data.success) {
-        showToast('✨ Aapki Profile details update ho gayi!');
+        showToast('Aapki Profile details update ho gayi!');
         setProfile(res.data.data);
       }
     } catch (err) {
@@ -124,12 +124,12 @@ export const Profile = ({ onNavigate }) => {
       if (editingAddressId) {
         const res = await customerApi.updateAddress(editingAddressId, payload);
         if (res.data && res.data.success) {
-          showToast('✨ Saved Address update ho gaya!');
+          showToast('Saved Address update ho gaya!');
         }
       } else {
         const res = await customerApi.addAddress(payload);
         if (res.data && res.data.success) {
-          showToast('🎉 Naya Address save ho gaya!');
+          showToast('Naya Address save ho gaya!');
         }
       }
       await fetchProfileAndZones();
@@ -146,11 +146,11 @@ export const Profile = ({ onNavigate }) => {
     try {
       const res = await customerApi.deleteAddress(addrId);
       if (res.data && res.data.success) {
-        showToast('🗑️ Address remove ho gaya.');
+        showToast('Address remove ho gaya.');
       }
       await fetchProfileAndZones();
     } catch (err) {
-      showToast('⚠️ Address delete nahi ho paaya.');
+      showToast('Address delete nahi ho paaya.');
     }
   };
 
@@ -225,10 +225,13 @@ export const Profile = ({ onNavigate }) => {
               padding: '0.75rem 1.25rem',
               marginBottom: '1.5rem',
               fontWeight: '800',
-              fontSize: '0.875rem'
+              fontSize: '0.875rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem'
             }}
           >
-            ⚠️ {errorMsg}
+            <AlertTriangle size={16} /> <span>{errorMsg}</span>
           </div>
         )}
 
@@ -408,7 +411,7 @@ export const Profile = ({ onNavigate }) => {
             <div style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-md)', padding: '1.5rem', width: '100%', maxWidth: '480px', boxShadow: 'var(--shadow-md)' }}>
               
               <h3 className="font-display" style={{ fontSize: '1.2rem', color: 'var(--color-navy)', fontWeight: '800', marginBottom: '1rem', paddingBottom: '0.5rem', borderBottom: '1px solid var(--color-border)' }}>
-                {editingAddressId ? '✏️ Edit Saved Address' : '➕ Save New Delivery Address'}
+                {editingAddressId ? 'Edit Saved Address' : 'Save New Delivery Address'}
               </h3>
 
               <form onSubmit={handleSaveAddress} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>

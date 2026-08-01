@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { mockOrders } from '../../admin/data/mockOrders';
-import { Clock, Truck, CheckCircle, ArrowLeft, ShoppingBag } from '../../../components/Icons';
+import { Clock, Truck, CheckCircle, ArrowLeft, ShoppingBag, AlertTriangle } from '../../../components/Icons';
 import { formatCurrency } from '../../../utils/formatCurrency';
 import ordersApi from '../../../api/orders.api';
 
@@ -18,7 +18,7 @@ export const MyOrders = ({ onNavigate }) => {
           setOrders(res.data.data);
         }
       } catch (err) {
-        console.warn('⚠️ Real API offline, using local fallback orders for My Orders');
+        console.warn('Real API offline, using local fallback orders for My Orders');
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -30,15 +30,15 @@ export const MyOrders = ({ onNavigate }) => {
   const getStatusBadge = (status) => {
     switch (status) {
       case 'pending':
-        return { label: '🟡 Waiting For Store Approval', bg: 'var(--color-gold-soft)', color: 'var(--color-gold-hover)', border: 'var(--color-gold)' };
+        return { label: 'Waiting For Store Approval', bg: 'var(--color-gold-soft)', color: 'var(--color-gold-hover)', border: 'var(--color-gold)' };
       case 'accepted':
-        return { label: '🔵 Order Accepted & Preparing', bg: 'rgba(28, 43, 74, 0.1)', color: 'var(--color-primary)', border: 'var(--color-primary-light)' };
+        return { label: 'Order Accepted & Preparing', bg: 'rgba(28, 43, 74, 0.1)', color: 'var(--color-primary)', border: 'var(--color-primary-light)' };
       case 'out-for-delivery':
-        return { label: '🛵 Out For Delivery', bg: 'rgba(59, 130, 246, 0.12)', color: '#1D4ED8', border: '#3B82F6' };
+        return { label: 'Out For Delivery', bg: 'rgba(59, 130, 246, 0.12)', color: '#1D4ED8', border: '#3B82F6' };
       case 'delivered':
-        return { label: '🟢 Delivered', bg: 'var(--color-success-bg)', color: 'var(--color-success)', border: 'var(--color-success-border)' };
+        return { label: 'Delivered', bg: 'var(--color-success-bg)', color: 'var(--color-success)', border: 'var(--color-success-border)' };
       case 'rejected':
-        return { label: '🔴 Rejected', bg: 'var(--color-error-bg)', color: 'var(--color-error)', border: 'var(--color-error-border)' };
+        return { label: 'Rejected', bg: 'var(--color-error-bg)', color: 'var(--color-error)', border: 'var(--color-error-border)' };
       default:
         return { label: status, bg: 'var(--color-cream)', color: 'var(--color-text-muted)', border: 'var(--color-border)' };
     }
@@ -137,9 +137,10 @@ export const MyOrders = ({ onNavigate }) => {
                   )}
 
                   {order.status === 'rejected' && order.rejectReason && (
-                    <div style={{ backgroundColor: 'var(--color-error-bg)', border: '1px solid var(--color-error-border)', borderRadius: 'var(--radius-sm)', padding: '0.65rem 0.85rem', marginBottom: '1rem' }}>
+                    <div style={{ backgroundColor: 'var(--color-error-bg)', border: '1px solid var(--color-error-border)', borderRadius: 'var(--radius-sm)', padding: '0.65rem 0.85rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <AlertTriangle size={15} color="var(--color-error)" />
                       <span style={{ fontSize: '0.825rem', fontWeight: '700', color: 'var(--color-error)' }}>
-                        🔴 Rejection Reason: {order.rejectReason}
+                        Rejection Reason: {order.rejectReason}
                       </span>
                     </div>
                   )}
@@ -174,7 +175,9 @@ export const MyOrders = ({ onNavigate }) => {
           </div>
         ) : (
           <div style={{ textAlign: 'center', padding: '3.5rem 1.5rem', backgroundColor: 'var(--color-cream-card)', borderRadius: 'var(--radius-md)', border: '1.5px solid var(--color-border)' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '0.75rem' }}>🛍️</div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.75rem' }}>
+              <ShoppingBag size={48} color="var(--color-gold)" />
+            </div>
             <h3 className="font-display" style={{ fontSize: '1.25rem', color: 'var(--color-primary)', fontWeight: '700', marginBottom: '0.4rem' }}>
               Aapne Abhi Tak Koi Order Nahi Kiya Hai
             </h3>

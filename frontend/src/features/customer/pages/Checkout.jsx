@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useCart } from '../../../context/CartContext';
-import { ShieldCheck, Clock, ArrowRight, ArrowLeft, CheckCircle, Truck, MapPin, Plus } from '../../../components/Icons';
+import { ShieldCheck, Clock, ArrowRight, ArrowLeft, CheckCircle, Truck, MapPin, Plus, Sun, AlertTriangle, ShoppingBag } from '../../../components/Icons';
 import { formatCurrency } from '../../../utils/formatCurrency';
 import ordersApi from '../../../api/orders.api';
 import customerApi from '../../../api/customer.api';
@@ -59,7 +59,7 @@ export const Checkout = ({ onNavigate }) => {
           }
         }
       } catch (err) {
-        console.warn('⚠️ Could not fetch saved addresses in Checkout');
+        console.warn('Could not fetch saved addresses in Checkout');
       }
     }
     fetchSavedAddresses();
@@ -146,7 +146,9 @@ export const Checkout = ({ onNavigate }) => {
     return (
       <div style={{ paddingTop: '3.5rem', paddingBottom: '4.5rem', textAlign: 'center' }}>
         <div className="container" style={{ maxWidth: '460px' }}>
-          <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>🛍️</div>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
+            <ShoppingBag size={56} color="var(--color-gold)" />
+          </div>
           <h2 className="font-display" style={{ fontSize: '1.6rem', color: 'var(--color-navy)', fontWeight: '700', marginBottom: '0.5rem' }}>
             Cart Me Koi Item Nahi Hai
           </h2>
@@ -222,10 +224,13 @@ export const Checkout = ({ onNavigate }) => {
                   padding: '0.85rem 1.1rem',
                   fontSize: '0.875rem',
                   fontWeight: '700',
-                  animation: 'slideDownFade 0.25s ease'
+                  animation: 'slideDownFade 0.25s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem'
                 }}
               >
-                ⚠️ {errorMsg}
+                <AlertTriangle size={16} /> <span>{errorMsg}</span>
               </div>
             )}
 
@@ -374,7 +379,7 @@ export const Checkout = ({ onNavigate }) => {
                         onChange={handleSelectManualEntry}
                         style={{ accentColor: 'var(--color-navy)', width: '16px', height: '16px' }}
                       />
-                      <Plus size={16} /> <span>➕ High-speed Manual Address Input</span>
+                      <Plus size={16} /> <span>High-speed Manual Address Input</span>
                     </div>
                   </div>
                 </div>
@@ -466,8 +471,8 @@ export const Checkout = ({ onNavigate }) => {
                     style={{ accentColor: 'var(--color-navy)', width: '16px', height: '16px' }}
                   />
                   <div>
-                    <div style={{ fontSize: '0.9rem', fontWeight: '800', color: 'var(--color-navy)' }}>
-                      ⚡ Jald Se Jald (Within 45-60 Minutes)
+                    <div style={{ fontSize: '0.9rem', fontWeight: '800', color: 'var(--color-navy)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <Clock size={16} color="var(--color-gold-hover)" /> <span>Jald Se Jald (Within 45-60 Minutes)</span>
                     </div>
                     <div style={{ fontSize: '0.775rem', color: 'var(--color-text-muted)', marginTop: '0.1rem' }}>
                       Farm se turant fresh pack hokar niklega.
@@ -496,8 +501,8 @@ export const Checkout = ({ onNavigate }) => {
                     style={{ accentColor: 'var(--color-navy)', width: '16px', height: '16px' }}
                   />
                   <div>
-                    <div style={{ fontSize: '0.9rem', fontWeight: '800', color: 'var(--color-navy)' }}>
-                      🌅 Kal Subah Early Morning Slot (6:00 AM - 7:30 AM)
+                    <div style={{ fontSize: '0.9rem', fontWeight: '800', color: 'var(--color-navy)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <Sun size={16} color="var(--color-gold-hover)" /> <span>Kal Subah Early Morning Slot (6:00 AM - 7:30 AM)</span>
                     </div>
                     <div style={{ fontSize: '0.775rem', color: 'var(--color-text-muted)', marginTop: '0.1rem' }}>
                       Rozana ki subah ki chai ke liye fresh doodh batch.

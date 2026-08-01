@@ -40,7 +40,7 @@ export const AdminCategories = () => {
         setCategoriesList(res.data.data);
       }
     } catch (err) {
-      console.warn('⚠️ Real API offline, using local fallback dataset for Admin Categories');
+      console.warn('Real API offline, using local fallback dataset for Admin Categories');
     } finally {
       setLoading(false);
     }
@@ -112,18 +112,18 @@ export const AdminCategories = () => {
       if (modalMode === 'add') {
         const res = await adminCategoriesApi.createCategory(payload);
         if (res.data && res.data.success) {
-          showToast('🎉 Nayi Dairy Category add ho gayi!');
+          showToast('Nayi Dairy Category add ho gayi!');
         }
       } else {
         const res = await adminCategoriesApi.updateCategory(editingCategoryId, payload);
         if (res.data && res.data.success) {
-          showToast('✨ Category details update ho gayi!');
+          showToast('Category details update ho gayi!');
         }
       }
       await fetchCategories();
     } catch (err) {
       const msg = err.response?.data?.message || 'Category save nahi ho paayi.';
-      showToast(`⚠️ ${msg}`);
+      showToast(msg);
     }
 
     setIsModalOpen(false);
@@ -131,31 +131,31 @@ export const AdminCategories = () => {
 
   const handleDeleteCategory = async (cat) => {
     const catId = cat.id || cat._id;
-    const confirmDelete = window.confirm(`Kya aap "${cat.name}" category ko sachme delete karna chahte hain?`);
+    const confirmDelete = window.confirm(`Kya aap "${cat.name}" category delete karna chahte hain?`);
     if (!confirmDelete) return;
 
     try {
       const res = await adminCategoriesApi.deleteCategory(catId);
       if (res.data && res.data.success) {
-        showToast('🗑️ Category delete ho gayi!');
+        showToast('Category delete ho gayi!');
       }
       await fetchCategories();
     } catch (err) {
       const errorMsg = err.response?.data?.message || 'Category delete nahi ho paayi.';
-      showToast(`⚠️ ${errorMsg}`);
+      showToast(errorMsg);
     }
   };
 
   return (
     <div className="admin-page-container">
       
-      {/* Toast Banner */}
+      {/* Toast Alert Banner */}
       {toastMessage && (
         <div
           style={{
-            backgroundColor: toastMessage.includes('⚠️') ? 'var(--color-error-bg)' : 'var(--color-success-bg)',
-            border: toastMessage.includes('⚠️') ? '1.5px solid var(--color-error-border)' : '1.5px solid var(--color-success-border)',
-            color: toastMessage.includes('⚠️') ? 'var(--color-error)' : 'var(--color-success)',
+            backgroundColor: toastMessage.toLowerCase().includes('delete') || toastMessage.toLowerCase().includes('nahi') ? 'var(--color-error-bg)' : 'var(--color-success-bg)',
+            border: toastMessage.toLowerCase().includes('delete') || toastMessage.toLowerCase().includes('nahi') ? '1.5px solid var(--color-error-border)' : '1.5px solid var(--color-success-border)',
+            color: toastMessage.toLowerCase().includes('delete') || toastMessage.toLowerCase().includes('nahi') ? 'var(--color-error)' : 'var(--color-success)',
             borderRadius: 'var(--radius-md)',
             padding: '0.75rem 1.25rem',
             marginBottom: '1.25rem',
@@ -314,13 +314,13 @@ export const AdminCategories = () => {
       <AdminModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={modalMode === 'add' ? '➕ Add New Dairy Category' : '✏️ Edit Category Details'}
+        title={modalMode === 'add' ? 'Add New Dairy Category' : 'Edit Category Details'}
       >
         <form onSubmit={handleSaveCategory} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           
           {validationError && (
             <div style={{ padding: '0.5rem 0.85rem', backgroundColor: 'var(--color-error-bg)', border: '1px solid var(--color-error-border)', color: 'var(--color-error)', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem', fontWeight: '700' }}>
-              ⚠️ {validationError}
+              {validationError}
             </div>
           )}
 

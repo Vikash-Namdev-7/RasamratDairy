@@ -76,7 +76,7 @@ export const NotificationProvider = ({ children }) => {
         setUnreadCount(res.data.unreadCount || 0);
       }
     } catch (err) {
-      console.warn('⚠️ Notifications REST API offline or error:', err.message);
+      console.warn('Notifications REST API offline or error:', err.message);
     }
   }, [isCustomerAuth, isAdminAuth]);
 
@@ -89,7 +89,7 @@ export const NotificationProvider = ({ children }) => {
     if (!socket) return;
 
     const handleNewNotification = (data) => {
-      console.log('🔔 Real-time Notification received:', data);
+      console.log('Real-time Notification received:', data);
 
       // Play audio chime
       playChimeSound();

@@ -19,7 +19,7 @@ export const CartProvider = ({ children }) => {
           setAllZones(res.data.data);
         }
       } catch (err) {
-        console.warn('⚠️ Real Zones API offline, using fallback zones dataset in CartContext');
+        console.warn('Real Zones API offline, using fallback zones dataset in CartContext');
       }
     }
     fetchZones();

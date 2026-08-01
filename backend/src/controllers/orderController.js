@@ -105,7 +105,7 @@ const createOrder = async (req, res, next) => {
 
     // 6. Trigger Real-time Notifications
     notifyCustomer(req.customer.id, {
-      title: 'Order Place Ho Gaya! 🎉',
+      title: 'Order Place Ho Gaya!',
       message: `Aapka order #${order.orderNumber} dukaan tak pahuch gaya hai. Status track karne ke liye Orders dekhein.`,
       type: 'order',
       relatedId: order._id

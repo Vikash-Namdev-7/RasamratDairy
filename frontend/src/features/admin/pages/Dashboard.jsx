@@ -44,7 +44,7 @@ export const Dashboard = ({ onNavigate }) => {
           }
         }
       } catch (err) {
-        console.warn('⚠️ Real Dashboard Stats API offline, using fallback fetch');
+        console.warn('Real Dashboard Stats API offline, using fallback fetch');
         try {
           const ordersRes = await adminOrdersApi.getOrders('all');
           if (ordersRes.data && Array.isArray(ordersRes.data.data)) {

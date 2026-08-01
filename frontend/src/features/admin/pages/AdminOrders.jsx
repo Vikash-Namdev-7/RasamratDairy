@@ -42,7 +42,7 @@ export const AdminOrders = () => {
         setOrdersList(res.data.data);
       }
     } catch (err) {
-      console.warn('⚠️ Real Orders API offline, using local fallback dataset for Admin Orders');
+      console.warn('Real Orders API offline, using local fallback dataset for Admin Orders');
     } finally {
       setLoading(false);
     }
@@ -119,7 +119,7 @@ export const AdminOrders = () => {
         deliveryTime: computedTime
       });
       if (res.data && res.data.success) {
-        showToast(`🎉 Order #${selectedOrder.orderNumber || orderId} Accept ho gaya! (${computedTime})`);
+        showToast(`Order #${selectedOrder.orderNumber || orderId} Accept ho gaya! (${computedTime})`);
       }
       await fetchOrders();
     } catch (err) {
@@ -128,7 +128,7 @@ export const AdminOrders = () => {
           (o.id || o._id) === orderId ? { ...o, status: 'accepted', deliveryTime: computedTime } : o
         )
       );
-      showToast(`🎉 Order #${selectedOrder.orderNumber || orderId} Accept ho gaya!`);
+      showToast(`Order #${selectedOrder.orderNumber || orderId} Accept ho gaya!`);
     }
 
     setAcceptModalOpen(false);
@@ -155,7 +155,7 @@ export const AdminOrders = () => {
         rejectReason: finalReason
       });
       if (res.data && res.data.success) {
-        showToast(`🔴 Order #${selectedOrder.orderNumber || orderId} Reject mark kar diya gaya.`);
+        showToast(`Order #${selectedOrder.orderNumber || orderId} Reject mark kar diya gaya.`);
       }
       await fetchOrders();
     } catch (err) {
@@ -164,7 +164,7 @@ export const AdminOrders = () => {
           (o.id || o._id) === orderId ? { ...o, status: 'rejected', rejectReason: finalReason } : o
         )
       );
-      showToast(`🔴 Order #${selectedOrder.orderNumber || orderId} Reject mark ho gaya.`);
+      showToast(`Order #${selectedOrder.orderNumber || orderId} Reject mark ho gaya.`);
     }
 
     setRejectModalOpen(false);
@@ -177,14 +177,14 @@ export const AdminOrders = () => {
     try {
       const res = await adminOrdersApi.updateStatus(orderId, { status: newStatus });
       if (res.data && res.data.success) {
-        showToast(`✨ Order #${order.orderNumber || orderId} status '${newStatus}' update ho gaya!`);
+        showToast(`Order #${order.orderNumber || orderId} status '${newStatus}' update ho gaya!`);
       }
       await fetchOrders();
     } catch (err) {
       setOrdersList((prev) =>
         prev.map((o) => ((o.id || o._id) === orderId ? { ...o, status: newStatus } : o))
       );
-      showToast(`✨ Order status '${newStatus}' update ho gaya!`);
+      showToast(`Order status '${newStatus}' update ho gaya!`);
     }
   };
 
@@ -195,9 +195,9 @@ export const AdminOrders = () => {
       {toastMessage && (
         <div
           style={{
-            backgroundColor: toastMessage.includes('🔴') ? 'var(--color-error-bg)' : 'var(--color-success-bg)',
-            border: toastMessage.includes('🔴') ? '1.5px solid var(--color-error-border)' : '1.5px solid var(--color-success-border)',
-            color: toastMessage.includes('🔴') ? 'var(--color-error)' : 'var(--color-success)',
+            backgroundColor: toastMessage.toLowerCase().includes('reject') ? 'var(--color-error-bg)' : 'var(--color-success-bg)',
+            border: toastMessage.toLowerCase().includes('reject') ? '1.5px solid var(--color-error-border)' : '1.5px solid var(--color-success-border)',
+            color: toastMessage.toLowerCase().includes('reject') ? 'var(--color-error)' : 'var(--color-success)',
             borderRadius: 'var(--radius-md)',
             padding: '0.75rem 1.25rem',
             marginBottom: '1.25rem',

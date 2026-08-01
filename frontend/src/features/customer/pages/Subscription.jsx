@@ -26,7 +26,7 @@ export const Subscription = ({ onNavigate }) => {
         setSubscriptionsList(res.data.data);
       }
     } catch (err) {
-      console.warn('⚠️ Real Subscriptions API offline, using fallback dataset');
+      console.warn('Real Subscriptions API offline, using fallback dataset');
     } finally {
       setLoading(false);
     }
@@ -72,7 +72,7 @@ export const Subscription = ({ onNavigate }) => {
     try {
       const res = await subscriptionsApi.createSubscription(payload);
       if (res.data && res.data.success) {
-        showToast(`🎉 Aapka Daily ${selectedMilkType.name} Subscription start ho gaya!`);
+        showToast(`Aapka Daily ${selectedMilkType.name} Subscription start ho gaya!`);
         await fetchSubscriptions();
       }
     } catch (err) {
@@ -90,7 +90,7 @@ export const Subscription = ({ onNavigate }) => {
         address: finalAddress
       };
       setSubscriptionsList((prev) => [newSub, ...prev]);
-      showToast(`🎉 Subscription start ho gaya! (Dev Fallback)`);
+      showToast(`Subscription start ho gaya! (Dev Fallback)`);
     }
   };
 
@@ -187,8 +187,8 @@ export const Subscription = ({ onNavigate }) => {
             overflow: 'hidden'
           }}
         >
-          <span className="badge-gold" style={{ fontSize: '0.7rem', marginBottom: '0.5rem' }}>
-            🥛 Daily Morning & Evening Delivery
+          <span className="badge-gold" style={{ fontSize: '0.7rem', marginBottom: '0.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+            <Milk size={14} color="var(--color-navy)" /> <span>Daily Morning & Evening Delivery</span>
           </span>
           <h1 className="font-display" style={{ fontSize: '2rem', fontWeight: '800', margin: '0.2rem 0 0.5rem' }}>
             Daily Shuddh Doodh Subscription

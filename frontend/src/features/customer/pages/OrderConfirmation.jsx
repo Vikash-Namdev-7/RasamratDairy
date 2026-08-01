@@ -23,7 +23,7 @@ export const OrderConfirmation = ({ onNavigate }) => {
           </div>
 
           <span className="badge-gold" style={{ marginBottom: '0.65rem' }}>
-            Order Placed Successfully! 🎉
+            Order Placed Successfully!
           </span>
 
           <h1 className="font-display" style={{ fontSize: '1.75rem', color: 'var(--color-navy)', fontWeight: '800', marginBottom: '0.4rem' }}>

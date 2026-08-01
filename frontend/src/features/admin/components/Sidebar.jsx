@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronRight, X, LogOut } from '../../../components/Icons';
+import { ChevronRight, X, LogOut, Globe } from '../../../components/Icons';
 import { useAdminAuth } from '../../../context/AdminAuthContext';
 
 export const Sidebar = ({ currentPath, onNavigate, mobileOpen, onCloseMobile }) => {
@@ -136,7 +136,8 @@ export const Sidebar = ({ currentPath, onNavigate, mobileOpen, onCloseMobile }) 
               gap: '0.4rem'
             }}
           >
-            <span>🌐 Customer Website</span>
+            <Globe size={15} color="#FFFFFF" />
+            <span>Customer Website</span>
           </button>
 
           <button

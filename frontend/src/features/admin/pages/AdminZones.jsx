@@ -40,7 +40,7 @@ export const AdminZones = () => {
         setZonesList(res.data.data);
       }
     } catch (err) {
-      console.warn('⚠️ Real API offline, using local fallback dataset for Admin Zones');
+      console.warn('Real API offline, using local fallback dataset for Admin Zones');
     } finally {
       setLoading(false);
     }
@@ -114,18 +114,18 @@ export const AdminZones = () => {
       if (modalMode === 'add') {
         const res = await adminZonesApi.createZone(payload);
         if (res.data && res.data.success) {
-          showToast('🎉 Nayi Delivery Zone Add ho gayi!');
+          showToast('Nayi Delivery Zone Add ho gayi!');
         }
       } else {
         const res = await adminZonesApi.updateZone(editingZoneId, payload);
         if (res.data && res.data.success) {
-          showToast('✨ Delivery Zone settings update ho gayi!');
+          showToast('Delivery Zone settings update ho gayi!');
         }
       }
       await fetchZones();
     } catch (err) {
       const msg = err.response?.data?.message || 'Zone save nahi ho paayi.';
-      showToast(`⚠️ ${msg}`);
+      showToast(msg);
     }
 
     setIsModalOpen(false);
@@ -133,18 +133,18 @@ export const AdminZones = () => {
 
   const handleDeleteZone = async (zone) => {
     const zoneId = zone.id || zone._id;
-    const confirmDelete = window.confirm(`Kya aap "${zone.name}" zone ko sachme delete karna chahte hain?`);
+    const confirmDelete = window.confirm(`Kya aap "${zone.name}" zone delete karna chahte hain?`);
     if (!confirmDelete) return;
 
     try {
       const res = await adminZonesApi.deleteZone(zoneId);
       if (res.data && res.data.success) {
-        showToast('🗑️ Delivery Zone delete ho gayi!');
+        showToast('Delivery Zone delete ho gayi!');
       }
       await fetchZones();
     } catch (err) {
       const errorMsg = err.response?.data?.message || 'Zone delete nahi ho paayi.';
-      showToast(`⚠️ ${errorMsg}`);
+      showToast(errorMsg);
     }
   };
 
@@ -155,9 +155,9 @@ export const AdminZones = () => {
       {toastMessage && (
         <div
           style={{
-            backgroundColor: toastMessage.includes('⚠️') ? 'var(--color-error-bg)' : 'var(--color-success-bg)',
-            border: toastMessage.includes('⚠️') ? '1.5px solid var(--color-error-border)' : '1.5px solid var(--color-success-border)',
-            color: toastMessage.includes('⚠️') ? 'var(--color-error)' : 'var(--color-success)',
+            backgroundColor: toastMessage.toLowerCase().includes('delete') || toastMessage.toLowerCase().includes('nahi') ? 'var(--color-error-bg)' : 'var(--color-success-bg)',
+            border: toastMessage.toLowerCase().includes('delete') || toastMessage.toLowerCase().includes('nahi') ? '1.5px solid var(--color-error-border)' : '1.5px solid var(--color-success-border)',
+            color: toastMessage.toLowerCase().includes('delete') || toastMessage.toLowerCase().includes('nahi') ? 'var(--color-error)' : 'var(--color-success)',
             borderRadius: 'var(--radius-md)',
             padding: '0.75rem 1.25rem',
             marginBottom: '1.25rem',
@@ -358,13 +358,13 @@ export const AdminZones = () => {
       <AdminModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={modalMode === 'add' ? '➕ Add Delivery Zone' : '✏️ Edit Delivery Zone'}
+        title={modalMode === 'add' ? 'Add Delivery Zone' : 'Edit Delivery Zone'}
       >
         <form onSubmit={handleSaveZone} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           
           {validationError && (
             <div style={{ padding: '0.5rem 0.85rem', backgroundColor: 'var(--color-error-bg)', border: '1px solid var(--color-error-border)', color: 'var(--color-error)', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem', fontWeight: '700' }}>
-              ⚠️ {validationError}
+              {validationError}
             </div>
           )}
 

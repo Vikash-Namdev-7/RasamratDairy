@@ -34,7 +34,7 @@ export const Home = ({ onNavigate }) => {
           }
         }
       } catch (err) {
-        console.warn('⚠️ Real API offline, falling back to local dataset in Home page');
+        console.warn('Real API offline, falling back to local dataset in Home page');
       } finally {
         if (isMounted) setLoading(false);
       }
