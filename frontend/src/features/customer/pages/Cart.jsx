@@ -1,6 +1,6 @@
 import React from 'react';
 import { useCart } from '../../../context/CartContext';
-import { Plus, Minus, Trash, ArrowRight, ArrowLeft, ShieldCheck, Truck, Check } from '../../../components/Icons';
+import { Plus, Minus, Trash, ArrowRight, ArrowLeft, ShieldCheck, Truck, Check, AlertTriangle } from '../../../components/Icons';
 import { formatCurrency } from '../../../utils/formatCurrency';
 
 export const Cart = ({ onNavigate }) => {
@@ -107,16 +107,16 @@ export const Cart = ({ onNavigate }) => {
 
           {/* Progress Bar */}
           <div style={{ height: '7px', backgroundColor: 'rgba(0,0,0,0.08)', borderRadius: '4px', overflow: 'hidden', marginBottom: '0.5rem' }}>
-            <div style={{ height: '100%', width: `${progressPercent}%`, backgroundColor: isMinOrderMet ? '#22C55E' : 'var(--color-wine)', transition: 'width 0.4s ease' }} />
+            <div style={{ height: '100%', width: `${progressPercent}%`, backgroundColor: isMinOrderMet ? 'var(--color-success)' : 'var(--color-wine)', transition: 'width 0.4s ease' }} />
           </div>
 
           {!isMinOrderMet ? (
-            <p style={{ fontSize: '0.825rem', color: 'var(--color-wine)', fontWeight: '600', margin: 0 }}>
-              ⚠️ Is area me home delivery ke liye minimum {formatCurrency(minOrderAmount)} ka order zaroori hai. <strong>Aur {formatCurrency(shortfall)} ka saman jodiye home delivery ke liye.</strong>
+            <p style={{ fontSize: '0.825rem', color: 'var(--color-wine)', fontWeight: '600', margin: 0, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <AlertTriangle size={15} /> Is area me home delivery ke liye minimum {formatCurrency(minOrderAmount)} ka order zaroori hai. <strong>Aur {formatCurrency(shortfall)} ka saman jodiye home delivery ke liye.</strong>
             </p>
           ) : (
-            <p style={{ fontSize: '0.825rem', color: '#15803D', fontWeight: '600', margin: 0, display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-              <Check size={16} color="#15803D" /> Aap home delivery ke liye eligible hain ✓
+            <p style={{ fontSize: '0.825rem', color: 'var(--color-success)', fontWeight: '600', margin: 0, display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+              <Check size={16} color="var(--color-success)" /> Aap home delivery ke liye eligible hain
             </p>
           )}
         </div>

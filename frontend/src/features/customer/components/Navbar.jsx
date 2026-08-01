@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ShoppingBag, Search, X, Menu, ChevronRight, User, LogOut, Sparkles } from '../../../components/Icons';
+import { ShoppingBag, Search, X, Menu, ChevronRight, User, LogOut, Sparkles, Home, Package, Milk } from '../../../components/Icons';
 import { categories } from '../data/categories';
 import { products } from '../data/products';
 import { useCart } from '../../../context/CartContext';
@@ -16,9 +16,9 @@ export const Navbar = ({ currentPath, onNavigate }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
   const navLinks = [
-    { name: 'Home', path: '/', icon: '🏠' },
-    { name: 'Products', path: '/products', icon: '📦' },
-    { name: 'Milk Subscription', path: '/subscription', icon: '🥛' },
+    { name: 'Home', path: '/', iconKey: 'Home' },
+    { name: 'Products', path: '/products', iconKey: 'Package' },
+    { name: 'Milk Subscription', path: '/subscription', iconKey: 'Milk' },
   ];
 
   const handleLinkClick = (e, path) => {
@@ -584,7 +584,13 @@ export const Navbar = ({ currentPath, onNavigate }) => {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                    <span style={{ fontSize: '1.1rem' }}>{link.icon}</span>
+                    {link.iconKey === 'Home' ? (
+                      <Home size={18} color={isActive ? 'var(--color-gold)' : '#FFFFFF'} />
+                    ) : link.iconKey === 'Package' ? (
+                      <Package size={18} color={isActive ? 'var(--color-gold)' : '#FFFFFF'} />
+                    ) : (
+                      <Milk size={18} color={isActive ? 'var(--color-gold)' : '#FFFFFF'} />
+                    )}
                     <span>{link.name}</span>
                   </div>
                   <ChevronRight size={14} color={isActive ? 'var(--color-gold)' : 'rgba(255,255,255,0.3)'} />
