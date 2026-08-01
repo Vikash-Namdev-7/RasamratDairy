@@ -32,12 +32,20 @@ const adminDashboardRoutes = require('./routes/adminDashboardRoutes');
 const subscriptionRoutes = require('./routes/subscriptionRoutes');
 const adminSubscriptionRoutes = require('./routes/adminSubscriptionRoutes');
 const customerRoutes = require('./routes/customerRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
+
+const http = require('http');
+const { initSocket } = require('./socket');
 
 const app = express();
+const server = http.createServer(app);
 const PORT = process.env.PORT || 5000;
 
 // Connect Database
 connectDB();
+
+// Initialize Socket.io Server
+initSocket(server);
 
 // Security HTTP Headers (if installed)
 if (helmet) {
@@ -97,11 +105,12 @@ app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/admin/subscriptions', adminSubscriptionRoutes);
 
 app.use('/api/customers', customerRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Global Error Handler Middleware
 app.use(errorHandler);
 
-// Start Server Listener
-app.listen(PORT, () => {
+// Start HTTP Server Listener (Express + Socket.io)
+server.listen(PORT, () => {
   console.log(`🚀 Rasamrat Dairy Backend Server listening at http://localhost:${PORT}`);
 });

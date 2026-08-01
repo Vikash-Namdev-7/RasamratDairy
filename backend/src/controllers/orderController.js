@@ -2,6 +2,7 @@ const Order = require('../models/Order');
 const Product = require('../models/Product');
 const Zone = require('../models/Zone');
 const Customer = require('../models/Customer');
+const { notifyCustomer, notifyAdmin } = require('../utils/notify');
 
 // @desc    Create a new order (Server-side price & stock validation)
 // @route   POST /api/orders
@@ -100,6 +101,21 @@ const createOrder = async (req, res, next) => {
       zoneName: zone.name,
       address: address.trim(),
       status: 'pending'
+    });
+
+    // 6. Trigger Real-time Notifications
+    notifyCustomer(req.customer.id, {
+      title: 'Order Place Ho Gaya! 🎉',
+      message: `Aapka order #${order.orderNumber} dukaan tak pahuch gaya hai. Status track karne ke liye Orders dekhein.`,
+      type: 'order',
+      relatedId: order._id
+    });
+
+    notifyAdmin({
+      title: 'Naya Order Aaya',
+      message: `${customerName} ne ₹${totalPayable} ka naya order kiya hai (#${order.orderNumber}).`,
+      type: 'order',
+      relatedId: order._id
     });
 
     return res.status(201).json({
@@ -237,6 +253,37 @@ const updateOrderStatus = async (req, res, next) => {
     if (rejectReason) order.rejectReason = rejectReason.trim();
 
     await order.save();
+
+    // Trigger Status-specific Real-time Customer Notification
+    if (status === 'accepted') {
+      notifyCustomer(order.customerId, {
+        title: 'Order Accept Ho Gaya',
+        message: `Order #${order.orderNumber} accept kar liya gaya hai. ${order.deliveryTime || 'Jaldi hi deliver hoga'}.`,
+        type: 'order',
+        relatedId: order._id
+      });
+    } else if (status === 'rejected') {
+      notifyCustomer(order.customerId, {
+        title: 'Order Reject Ho Gaya',
+        message: `Order #${order.orderNumber} cancel mark ho gaya. Reason: ${order.rejectReason || 'Store unavailable'}.`,
+        type: 'order',
+        relatedId: order._id
+      });
+    } else if (status === 'out-for-delivery') {
+      notifyCustomer(order.customerId, {
+        title: 'Order Nikal Chuka Hai',
+        message: `Order #${order.orderNumber} out for delivery hai! Delivery partner aapke pate par aa raha hai.`,
+        type: 'order',
+        relatedId: order._id
+      });
+    } else if (status === 'delivered') {
+      notifyCustomer(order.customerId, {
+        title: 'Order Deliver Ho Gaya!',
+        message: `Order #${order.orderNumber} aapko deliver ho gaya hai. Dhanyawad, Gau-Dhara Rasamrat Dairy!`,
+        type: 'order',
+        relatedId: order._id
+      });
+    }
 
     return res.status(200).json({
       success: true,

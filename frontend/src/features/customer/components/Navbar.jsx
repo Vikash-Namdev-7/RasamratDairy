@@ -1,18 +1,21 @@
 import React, { useState, useMemo } from 'react';
-import { ShoppingBag, Search, X, Menu, ChevronRight, User, LogOut, Sparkles, Home, Package, Milk } from '../../../components/Icons';
+import { ShoppingBag, Search, X, Menu, ChevronRight, User, LogOut, Sparkles, Home, Package, Milk, Bell } from '../../../components/Icons';
 import { categories } from '../data/categories';
 import { products } from '../data/products';
 import { useCart } from '../../../context/CartContext';
 import { useAuth } from '../../../context/AuthContext';
+import { useNotifications } from '../../../context/NotificationContext';
 
 export const Navbar = ({ currentPath, onNavigate }) => {
   const { totalCount } = useCart();
   const { customer, isAuthenticated, logout } = useAuth();
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
 
   const [searchOpen, setSearchOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [catDropdownOpen, setCatDropdownOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [notifDropdownOpen, setNotifDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   const navLinks = [
@@ -266,6 +269,142 @@ export const Navbar = ({ currentPath, onNavigate }) => {
                 </span>
               )}
             </a>
+
+            {/* Notification Bell Button & Dropdown */}
+            {isAuthenticated && (
+              <div style={{ position: 'relative' }}>
+                <button
+                  type="button"
+                  onClick={() => { setNotifDropdownOpen(!notifDropdownOpen); setUserDropdownOpen(false); }}
+                  className="nav-action-btn"
+                  style={{
+                    position: 'relative',
+                    backgroundColor: notifDropdownOpen ? 'var(--color-gold)' : 'rgba(255, 255, 255, 0.08)',
+                    border: '1.5px solid rgba(255, 255, 255, 0.15)',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    color: notifDropdownOpen ? 'var(--color-navy)' : '#FFFFFF',
+                    transition: 'all 0.2s ease',
+                  }}
+                  title="Notifications"
+                >
+                  <Bell color={notifDropdownOpen ? 'var(--color-navy)' : '#FFFFFF'} className="nav-icon" />
+                  {unreadCount > 0 && (
+                    <span
+                      style={{
+                        position: 'absolute',
+                        top: '-2px',
+                        right: '-2px',
+                        backgroundColor: 'var(--color-gold)',
+                        color: 'var(--color-navy-dark)',
+                        fontWeight: '900',
+                        fontSize: '0.65rem',
+                        minWidth: '16px',
+                        height: '16px',
+                        padding: '0 4px',
+                        borderRadius: '10px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        border: '1.5px solid var(--color-navy-dark)',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
+                      }}
+                    >
+                      {unreadCount}
+                    </span>
+                  )}
+                </button>
+
+                {/* Dropdown Menu */}
+                {notifDropdownOpen && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: '100%',
+                      right: 0,
+                      marginTop: '0.5rem',
+                      width: '320px',
+                      backgroundColor: 'var(--color-navy-dark)',
+                      borderRadius: 'var(--radius-md)',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
+                      boxShadow: 'var(--shadow-strong)',
+                      overflow: 'hidden',
+                      zIndex: 115,
+                      animation: 'slideDownFade 0.2s ease'
+                    }}
+                  >
+                    <div
+                      style={{
+                        padding: '0.75rem 1rem',
+                        borderBottom: '1px solid rgba(255,255,255,0.1)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between'
+                      }}
+                    >
+                      <h4 style={{ fontSize: '0.875rem', fontWeight: '800', color: '#FFFFFF', margin: 0 }}>
+                        Notifications {unreadCount > 0 && <span style={{ color: 'var(--color-gold)' }}>({unreadCount})</span>}
+                      </h4>
+                      {unreadCount > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => markAllAsRead()}
+                          style={{ background: 'none', border: 'none', color: 'var(--color-gold)', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer' }}
+                        >
+                          Mark all read
+                        </button>
+                      )}
+                    </div>
+
+                    <div style={{ maxHeight: '280px', overflowY: 'auto' }}>
+                      {notifications.length > 0 ? (
+                        notifications.map((n) => {
+                          const id = n._id || n.id;
+                          return (
+                            <div
+                              key={id}
+                              onClick={() => {
+                                markAsRead(id);
+                                setNotifDropdownOpen(false);
+                                if (onNavigate) onNavigate('/my-orders');
+                              }}
+                              style={{
+                                padding: '0.75rem 1rem',
+                                borderBottom: '1px solid rgba(255,255,255,0.06)',
+                                backgroundColor: n.isRead ? 'transparent' : 'rgba(212, 165, 66, 0.08)',
+                                cursor: 'pointer',
+                                transition: 'background 0.2s'
+                              }}
+                              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)')}
+                              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = n.isRead ? 'transparent' : 'rgba(212, 165, 66, 0.08)')}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
+                                <span style={{ fontSize: '0.8rem', fontWeight: '700', color: n.isRead ? '#CBD5E1' : 'var(--color-gold)' }}>
+                                  {n.title}
+                                </span>
+                                {!n.isRead && (
+                                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--color-gold)' }} />
+                                )}
+                              </div>
+                              <p style={{ fontSize: '0.75rem', color: '#94A3B8', margin: 0, lineHeight: '1.4' }}>
+                                {n.message}
+                              </p>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div style={{ padding: '1.5rem', textAlign: 'center', color: '#94A3B8', fontSize: '0.8rem' }}>
+                          Koi naye notifications nahi hain.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Customer Auth Button or Logged-in Dropdown */}
             {isAuthenticated ? (
