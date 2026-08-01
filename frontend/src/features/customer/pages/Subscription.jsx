@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import SectionHeading from '../components/SectionHeading';
 import { milkTypes, literOptions, slots } from '../data/subscriptionPlans';
 import { mySubscriptions as initialSubscriptions } from '../data/mySubscriptions';
-import { CheckCircle, Clock, ShieldCheck, ArrowRight, ArrowLeft, Plus, Minus, Check } from '../../../components/Icons';
+import { CheckCircle, Clock, ShieldCheck, ArrowRight, ArrowLeft, Plus, Minus, Check, AlertTriangle, Sun, Moon } from '../../../components/Icons';
 import { formatCurrency } from '../../../utils/formatCurrency';
 import subscriptionsApi from '../../../api/subscriptions.api';
 
@@ -204,10 +204,9 @@ export const Subscription = ({ onNavigate }) => {
             <CheckCircle size={18} /> {successToast}
           </div>
         )}
-
         {errorMsg && (
-          <div style={{ backgroundColor: 'var(--color-error-bg)', border: '1.5px solid var(--color-error-border)', color: 'var(--color-error)', borderRadius: 'var(--radius-md)', padding: '0.85rem 1.25rem', marginBottom: '1.5rem', fontWeight: '800', fontSize: '0.875rem' }}>
-            ⚠️ {errorMsg}
+          <div style={{ backgroundColor: 'var(--color-error-bg)', border: '1.5px solid var(--color-error-border)', color: 'var(--color-error)', borderRadius: 'var(--radius-md)', padding: '0.85rem 1.25rem', marginBottom: '1.5rem', fontWeight: '800', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <AlertTriangle size={18} /> {errorMsg}
           </div>
         )}
 
@@ -239,31 +238,38 @@ export const Subscription = ({ onNavigate }) => {
                       transition: 'all 0.2s ease'
                     }}
                   >
-                    <div style={{ fontWeight: '800', fontSize: '0.95rem', color: 'var(--color-navy)' }}>{type.name}</div>
-                    <div style={{ fontSize: '0.775rem', color: 'var(--color-text-muted)', margin: '0.2rem 0 0.4rem' }}>{type.description}</div>
-                    <div style={{ fontWeight: '900', fontSize: '0.9rem', color: 'var(--color-navy)' }}>₹{type.pricePerLitre}/Litre</div>
+                    <div style={{ fontWeight: '800', fontSize: '0.925rem', color: 'var(--color-navy)' }}>{type.name}</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--color-gold-hover)', fontWeight: '700', marginTop: '0.2rem' }}>₹{type.pricePerLitre}/Litre</div>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Step B: Select Quantity */}
+            {/* Step B: Select Litres */}
             <div style={{ marginBottom: '1.75rem' }}>
               <label style={{ fontSize: '0.85rem', fontWeight: '800', color: 'var(--color-navy)', display: 'block', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Rozana Ki Quantity (Litres):
+                Kitna Doodh Chahiye (Per Day):
               </label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', backgroundColor: 'var(--color-cream)', border: '1.5px solid var(--color-border)', borderRadius: 'var(--radius-full)', padding: '0.35rem 0.85rem' }}>
-                  <button type="button" onClick={() => setLiterIndex((prev) => Math.max(0, prev - 1))} style={{ background: 'none', border: 'none', color: 'var(--color-navy)', cursor: 'pointer', padding: '0.25rem 0.5rem' }}>
-                    <Minus size={16} />
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' }}>
+                {literOptions.map((lit, idx) => (
+                  <button
+                    key={lit}
+                    type="button"
+                    onClick={() => setLiterIndex(idx)}
+                    style={{
+                      padding: '0.55rem 1.1rem',
+                      borderRadius: 'var(--radius-full)',
+                      border: literIndex === idx ? '2px solid var(--color-navy)' : '1.5px solid var(--color-border)',
+                      backgroundColor: literIndex === idx ? 'var(--color-navy)' : 'var(--color-cream)',
+                      color: literIndex === idx ? '#FFFFFF' : 'var(--color-navy)',
+                      fontWeight: '800',
+                      fontSize: '0.85rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {lit} Litre
                   </button>
-                  <span style={{ fontWeight: '900', fontSize: '1.1rem', color: 'var(--color-navy)', padding: '0 0.85rem', minWidth: '60px', textAlign: 'center' }}>
-                    {selectedLitre} Litre
-                  </span>
-                  <button type="button" onClick={() => setLiterIndex((prev) => Math.min(literOptions.length - 1, prev + 1))} style={{ background: 'none', border: 'none', color: 'var(--color-navy)', cursor: 'pointer', padding: '0.25rem 0.5rem' }}>
-                    <Plus size={16} />
-                  </button>
-                </div>
+                ))}
               </div>
             </div>
 
@@ -285,8 +291,10 @@ export const Subscription = ({ onNavigate }) => {
                       cursor: 'pointer'
                     }}
                   >
-                    <div style={{ fontWeight: '800', fontSize: '0.9rem', color: 'var(--color-navy)' }}>{s.label}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{s.time}</div>
+                    <div style={{ fontWeight: '800', fontSize: '0.9rem', color: 'var(--color-navy)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      {s.id === 'morning' ? <Sun size={16} color="var(--color-gold)" /> : <Moon size={16} color="var(--color-primary)" />}
+                      <span>{s.label}</span>
+                    </div>
                   </div>
                 ))}
               </div>

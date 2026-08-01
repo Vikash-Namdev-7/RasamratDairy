@@ -1,6 +1,21 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+
+let helmet;
+try {
+  helmet = require('helmet');
+} catch (e) {
+  console.warn('⚠️ helmet module not installed yet. Run "npm install" in backend directory to activate.');
+}
+
+let rateLimit;
+try {
+  rateLimit = require('express-rate-limit');
+} catch (e) {
+  console.warn('⚠️ express-rate-limit module not installed yet. Run "npm install" in backend directory to activate.');
+}
+
 const connectDB = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
 
@@ -13,6 +28,7 @@ const zoneRoutes = require('./routes/zoneRoutes');
 const adminZoneRoutes = require('./routes/adminZoneRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const adminOrderRoutes = require('./routes/adminOrderRoutes');
+const adminDashboardRoutes = require('./routes/adminDashboardRoutes');
 const subscriptionRoutes = require('./routes/subscriptionRoutes');
 const adminSubscriptionRoutes = require('./routes/adminSubscriptionRoutes');
 const customerRoutes = require('./routes/customerRoutes');
@@ -22,6 +38,26 @@ const PORT = process.env.PORT || 5000;
 
 // Connect Database
 connectDB();
+
+// Security HTTP Headers (if installed)
+if (helmet) {
+  app.use(helmet({ contentSecurityPolicy: false }));
+}
+
+// Rate Limiter for Auth Routes (if installed)
+if (rateLimit) {
+  const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    message: {
+      success: false,
+      message: 'Too many auth requests from this IP, please try again after 15 minutes.'
+    },
+    standardHeaders: true,
+    legacyHeaders: false
+  });
+  app.use('/api/auth', authLimiter);
+}
 
 // Core Middleware
 app.use(
@@ -55,6 +91,7 @@ app.use('/api/admin/zones', adminZoneRoutes);
 
 app.use('/api/orders', orderRoutes);
 app.use('/api/admin/orders', adminOrderRoutes);
+app.use('/api/admin/dashboard', adminDashboardRoutes);
 
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/admin/subscriptions', adminSubscriptionRoutes);

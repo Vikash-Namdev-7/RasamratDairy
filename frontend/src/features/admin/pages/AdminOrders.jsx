@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { mockOrders as initialOrders } from '../data/mockOrders';
 import AdminModal from '../components/AdminModal';
-import { Search, X, Check, CheckCircle, Clock, Truck, ShieldCheck, ShoppingBag } from '../../../components/Icons';
+import { Search, X, Check, CheckCircle, Clock, Truck, ShieldCheck, ShoppingBag, Phone, AlertTriangle } from '../../../components/Icons';
 import { formatCurrency } from '../../../utils/formatCurrency';
 import adminOrdersApi from '../../../api/adminOrders.api';
 
@@ -232,11 +232,11 @@ export const AdminOrders = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.25rem' }}>
           {[
             { id: 'all', label: 'Sabhi Orders' },
-            { id: 'pending', label: '🟡 New / Pending' },
-            { id: 'accepted', label: '🔵 Accepted' },
-            { id: 'out-for-delivery', label: '🛵 Out For Delivery' },
-            { id: 'delivered', label: '🟢 Delivered' },
-            { id: 'rejected', label: '🔴 Rejected' }
+            { id: 'pending', label: 'Pending' },
+            { id: 'accepted', label: 'Accepted' },
+            { id: 'out-for-delivery', label: 'Out For Delivery' },
+            { id: 'delivered', label: 'Delivered' },
+            { id: 'rejected', label: 'Rejected' }
           ].map((tab) => (
             <button
               key={tab.id}
@@ -361,7 +361,9 @@ export const AdminOrders = () => {
                   <div>
                     <div style={{ fontSize: '0.725rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: '700' }}>Customer</div>
                     <div style={{ fontWeight: '800', fontSize: '0.9rem', color: 'var(--color-primary)', marginTop: '0.1rem' }}>{ord.customerName}</div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>📞 {ord.customerPhone}</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.15rem' }}>
+                      <Phone size={13} /> {ord.customerPhone}
+                    </div>
                   </div>
 
                   <div>
@@ -379,8 +381,8 @@ export const AdminOrders = () => {
                 )}
 
                 {ord.status === 'rejected' && ord.rejectReason && (
-                  <div style={{ backgroundColor: 'var(--color-error-bg)', border: '1px solid var(--color-error-border)', borderRadius: 'var(--radius-sm)', padding: '0.55rem 0.75rem', marginBottom: '1rem', fontSize: '0.825rem', fontWeight: '700', color: 'var(--color-error)' }}>
-                    🔴 Rejection Reason: {ord.rejectReason}
+                  <div style={{ backgroundColor: 'var(--color-error-bg)', border: '1px solid var(--color-error-border)', borderRadius: 'var(--radius-sm)', padding: '0.55rem 0.75rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.825rem', fontWeight: '700', color: 'var(--color-error)' }}>
+                    <AlertTriangle size={15} /> Rejection Reason: {ord.rejectReason}
                   </div>
                 )}
 
@@ -453,14 +455,17 @@ export const AdminOrders = () => {
                           padding: '0.45rem 1.1rem',
                           borderRadius: 'var(--radius-sm)',
                           border: 'none',
-                          backgroundColor: '#1D4ED8',
+                          backgroundColor: 'var(--color-primary)',
                           color: '#FFFFFF',
                           fontWeight: '800',
                           fontSize: '0.825rem',
-                          cursor: 'pointer'
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.35rem'
                         }}
                       >
-                        🛵 Dispatch (Out For Delivery)
+                        <Truck size={14} /> Dispatch (Out For Delivery)
                       </button>
                     )}
 
@@ -476,10 +481,13 @@ export const AdminOrders = () => {
                           color: '#FFFFFF',
                           fontWeight: '800',
                           fontSize: '0.825rem',
-                          cursor: 'pointer'
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.35rem'
                         }}
                       >
-                        🟢 Mark As Delivered
+                        <CheckCircle size={14} /> Mark As Delivered
                       </button>
                     )}
                   </div>
@@ -502,7 +510,7 @@ export const AdminOrders = () => {
       <AdminModal
         isOpen={acceptModalOpen}
         onClose={() => setAcceptModalOpen(false)}
-        title={`🔵 Accept Order #${selectedOrder?.orderNumber || selectedOrder?.id || ''}`}
+        title={`Accept Order #${selectedOrder?.orderNumber || selectedOrder?.id || ''}`}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
@@ -577,7 +585,7 @@ export const AdminOrders = () => {
       <AdminModal
         isOpen={rejectModalOpen}
         onClose={() => setRejectModalOpen(false)}
-        title={`🔴 Reject Order #${selectedOrder?.orderNumber || selectedOrder?.id || ''}`}
+        title={`Reject Order #${selectedOrder?.orderNumber || selectedOrder?.id || ''}`}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { products as fallbackProducts } from '../data/products';
 import ProductCard from '../components/ProductCard';
 import SectionHeading from '../components/SectionHeading';
-import { Star, Plus, Minus, ShieldCheck, Sparkles, Clock, ArrowRight, ArrowLeft, Check } from '../../../components/Icons';
+import { Star, Plus, Minus, ShieldCheck, Sparkles, Clock, ArrowRight, ArrowLeft, Check, Milk } from '../../../components/Icons';
 import { useCart } from '../../../context/CartContext';
 import productsApi from '../../../api/products.api';
 
@@ -57,7 +57,9 @@ export const ProductDetail = ({ productId, onNavigate }) => {
     return (
       <div style={{ paddingTop: '3rem', paddingBottom: '4rem', textAlign: 'center' }}>
         <div className="container" style={{ maxWidth: '440px' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '0.75rem' }}>🥛</div>
+          <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: 'var(--color-gold-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 0.75rem auto' }}>
+            <Milk size={32} color="var(--color-gold-hover)" />
+          </div>
           <h2 className="font-display" style={{ fontSize: '1.5rem', color: 'var(--color-navy)', fontWeight: '700', marginBottom: '0.4rem' }}>
             Product Nahi Mila
           </h2>
@@ -256,9 +258,9 @@ export const ProductDetail = ({ productId, onNavigate }) => {
                 type="button"
                 onClick={() => onNavigate && onNavigate('/subscription')}
                 className="btn btn-gold"
-                style={{ width: '100%', padding: '0.7rem', fontSize: '0.875rem' }}
+                style={{ width: '100%', padding: '0.7rem', fontSize: '0.875rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}
               >
-                🥛 Is Product Ka Daily Subscription Shuru Karein <ArrowRight size={15} />
+                <Milk size={16} /> Is Product Ka Daily Subscription Shuru Karein <ArrowRight size={15} />
               </button>
             </div>
 

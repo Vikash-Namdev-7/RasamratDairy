@@ -13,6 +13,8 @@ import MyOrders from '../features/customer/pages/MyOrders';
 import Profile from '../features/customer/pages/Profile';
 import Login from '../features/customer/pages/Login';
 import Signup from '../features/customer/pages/Signup';
+import NotFound from '../features/customer/pages/NotFound';
+import ProtectedRoute from './ProtectedRoute';
 import { useAuth } from '../context/AuthContext';
 import { useAdminAuth } from '../context/AdminAuthContext';
 
@@ -44,8 +46,10 @@ export const AppRoutes = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const pathname = currentPath.split('?')[0];
+
   // 1. Un-protected Admin Login route
-  if (currentPath === '/admin/login') {
+  if (pathname === '/admin/login') {
     if (isAdminAuthenticated) {
       return (
         <AdminLayout currentPath="/admin/dashboard" onNavigate={navigate}>
@@ -57,18 +61,18 @@ export const AppRoutes = () => {
   }
 
   // 2. Admin Routes Protection
-  if (currentPath.startsWith('/admin')) {
+  if (pathname.startsWith('/admin')) {
     if (!isAdminAuthenticated) {
       return <AdminLogin onNavigate={navigate} />;
     }
 
     let AdminPageComponent = Dashboard;
-    if (currentPath === '/admin/products') AdminPageComponent = AdminProducts;
-    else if (currentPath === '/admin/categories') AdminPageComponent = AdminCategories;
-    else if (currentPath === '/admin/zones') AdminPageComponent = AdminZones;
-    else if (currentPath === '/admin/orders') AdminPageComponent = AdminOrders;
-    else if (currentPath === '/admin/subscriptions') AdminPageComponent = AdminSubscriptions;
-    else if (currentPath === '/admin/settings') AdminPageComponent = AdminSettings;
+    if (pathname === '/admin/products') AdminPageComponent = AdminProducts;
+    else if (pathname === '/admin/categories') AdminPageComponent = AdminCategories;
+    else if (pathname === '/admin/zones') AdminPageComponent = AdminZones;
+    else if (pathname === '/admin/orders') AdminPageComponent = AdminOrders;
+    else if (pathname === '/admin/subscriptions') AdminPageComponent = AdminSubscriptions;
+    else if (pathname === '/admin/settings') AdminPageComponent = AdminSettings;
 
     return (
       <AdminLayout currentPath={currentPath} onNavigate={navigate}>
@@ -78,70 +82,90 @@ export const AppRoutes = () => {
   }
 
   // 3. Public Signup Route
-  if (currentPath === '/signup') {
-    return <Signup onNavigate={navigate} />;
+  if (pathname === '/signup') {
+    return <Signup onNavigate={navigate} redirectPath={new URLSearchParams(window.location.search).get('redirect')} />;
   }
 
-  // 4. Customer Access Guard
-  if (!isCustomerAuthenticated) {
-    return <Login onNavigate={navigate} />;
+  // 4. Customer Login route
+  if (pathname === '/login') {
+    if (isCustomerAuthenticated) {
+      const redirectTarget = new URLSearchParams(window.location.search).get('redirect') || '/';
+      return (
+        <CustomerLayout currentPath={redirectTarget} onNavigate={navigate}>
+          <Home onNavigate={navigate} />
+        </CustomerLayout>
+      );
+    }
+    return <Login onNavigate={navigate} redirectPath={new URLSearchParams(window.location.search).get('redirect')} />;
   }
 
-  // 5. Explicit Customer Login route when already authenticated -> Redirect to Home
-  if (currentPath === '/login') {
-    return (
-      <CustomerLayout currentPath="/" onNavigate={navigate}>
-        <Home onNavigate={navigate} />
-      </CustomerLayout>
-    );
-  }
-
-  // 6. Authenticated Customer Routes Container
+  // 5. Customer Routes Container (Public & Protected via ProtectedRoute)
   const renderCustomerPage = () => {
-    if (currentPath === '/' || currentPath === '') {
+    if (pathname === '/' || pathname === '') {
       return <Home onNavigate={navigate} />;
     }
 
-    if (currentPath === '/products' || currentPath.startsWith('/products?')) {
+    if (pathname === '/products') {
       return <Products onNavigate={navigate} />;
     }
 
-    if (currentPath.startsWith('/products/')) {
-      const productId = currentPath.replace('/products/', '').trim();
+    if (pathname.startsWith('/products/')) {
+      const productId = pathname.replace('/products/', '').trim();
       return <ProductDetail productId={productId} onNavigate={navigate} />;
     }
 
-    if (currentPath.startsWith('/category/')) {
-      const slug = currentPath.replace('/category/', '').trim();
+    if (pathname.startsWith('/category/')) {
+      const slug = pathname.replace('/category/', '').trim();
       return <Category slug={slug} onNavigate={navigate} />;
     }
 
-    if (currentPath === '/cart') {
+    if (pathname === '/cart') {
       return <Cart onNavigate={navigate} />;
     }
 
-    if (currentPath === '/checkout') {
-      return <Checkout onNavigate={navigate} />;
+    // Protected Customer Routes
+    if (pathname === '/checkout') {
+      return (
+        <ProtectedRoute currentPath={currentPath} onNavigate={navigate}>
+          <Checkout onNavigate={navigate} />
+        </ProtectedRoute>
+      );
     }
 
-    if (currentPath.startsWith('/order-confirmation')) {
-      return <OrderConfirmation onNavigate={navigate} />;
+    if (pathname.startsWith('/order-confirmation')) {
+      return (
+        <ProtectedRoute currentPath={currentPath} onNavigate={navigate}>
+          <OrderConfirmation onNavigate={navigate} />
+        </ProtectedRoute>
+      );
     }
 
-    if (currentPath === '/subscription') {
-      return <Subscription onNavigate={navigate} />;
+    if (pathname === '/subscription') {
+      return (
+        <ProtectedRoute currentPath={currentPath} onNavigate={navigate}>
+          <Subscription onNavigate={navigate} />
+        </ProtectedRoute>
+      );
     }
 
-    if (currentPath === '/my-orders') {
-      return <MyOrders onNavigate={navigate} />;
+    if (pathname === '/my-orders') {
+      return (
+        <ProtectedRoute currentPath={currentPath} onNavigate={navigate}>
+          <MyOrders onNavigate={navigate} />
+        </ProtectedRoute>
+      );
     }
 
-    if (currentPath === '/profile') {
-      return <Profile onNavigate={navigate} />;
+    if (pathname === '/profile') {
+      return (
+        <ProtectedRoute currentPath={currentPath} onNavigate={navigate}>
+          <Profile onNavigate={navigate} />
+        </ProtectedRoute>
+      );
     }
 
-    // Default Fallback Page
-    return <Home onNavigate={navigate} />;
+    // Unmatched Customer Route -> 404
+    return <NotFound onNavigate={navigate} />;
   };
 
   return (

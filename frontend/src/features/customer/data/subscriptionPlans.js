@@ -7,6 +7,6 @@ export const milkTypes = [
 export const literOptions = [0.5, 1, 1.5, 2, 2.5, 3];
 
 export const slots = [
-  { id: "morning", label: "Subah (6 AM - 9 AM)", icon: "☀" },
-  { id: "evening", label: "Shaam (5 PM - 7 PM)", icon: "🌙" },
+  { id: "morning", label: "Subah (6 AM - 9 AM)", icon: "Sun" },
+  { id: "evening", label: "Shaam (5 PM - 7 PM)", icon: "Moon" },
 ];

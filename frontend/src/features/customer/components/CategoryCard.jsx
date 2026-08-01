@@ -35,7 +35,7 @@ export const CategoryCard = ({ category, onNavigate }) => {
           width: '72px',
           height: '72px',
           borderRadius: '50%',
-          backgroundColor: '#F3ECE1',
+          backgroundColor: 'var(--color-cream-alt)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -49,6 +49,7 @@ export const CategoryCard = ({ category, onNavigate }) => {
           src={imgSrc}
           onError={() => fallbackImage && setImgSrc(fallbackImage)}
           alt={name}
+          loading="lazy"
           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
         />
       </div>

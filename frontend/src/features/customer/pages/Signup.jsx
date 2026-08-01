@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../../context/AuthContext';
-import { ArrowLeft, CheckCircle, ShieldCheck } from '../../../components/Icons';
+import { ArrowLeft, CheckCircle, ShieldCheck, AlertTriangle } from '../../../components/Icons';
 
-export const Signup = ({ onNavigate }) => {
+export const Signup = ({ onNavigate, redirectPath }) => {
   const { signup, loading } = useAuth();
 
   const [formData, setFormData] = useState({
@@ -38,6 +38,10 @@ export const Signup = ({ onNavigate }) => {
       return;
     }
 
+    // Determine target redirect path (either prop or query param)
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetRedirect = redirectPath || urlParams.get('redirect') || '/';
+
     try {
       await signup({
         name: formData.name.trim(),
@@ -45,7 +49,7 @@ export const Signup = ({ onNavigate }) => {
         phone: formData.phone.trim(),
         password: formData.password
       });
-      if (onNavigate) onNavigate('/');
+      if (onNavigate) onNavigate(targetRedirect);
     } catch (err) {
       setErrorMessage(err.message || 'Signup fail ho gaya. Kripya details check karein.');
     }
@@ -167,16 +171,20 @@ export const Signup = ({ onNavigate }) => {
             <div
               style={{
                 backgroundColor: 'var(--color-error-bg)',
-                border: '1.5.px solid var(--color-error-border)',
+                border: '1.5px solid var(--color-error-border)',
                 color: 'var(--color-error)',
                 borderRadius: 'var(--radius-sm)',
                 padding: '0.65rem 0.85rem',
                 marginBottom: '1.25rem',
                 fontSize: '0.825rem',
-                fontWeight: '700'
+                fontWeight: '700',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem'
               }}
             >
-              ⚠️ {errorMessage}
+              <AlertTriangle size={16} />
+              <span>{errorMessage}</span>
             </div>
           )}
 

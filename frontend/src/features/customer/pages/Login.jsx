@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../../context/AuthContext';
-import { ArrowLeft, CheckCircle, ShieldCheck } from '../../../components/Icons';
+import { ArrowLeft, CheckCircle, ShieldCheck, AlertTriangle } from '../../../components/Icons';
 
-export const Login = ({ onNavigate }) => {
+export const Login = ({ onNavigate, redirectPath }) => {
   const { login, loading } = useAuth();
 
   const [email, setEmail] = useState('');
@@ -27,7 +27,7 @@ export const Login = ({ onNavigate }) => {
 
     try {
       await login(email.trim(), password);
-      if (onNavigate) onNavigate('/');
+      if (onNavigate) onNavigate(redirectPath || '/');
     } catch (err) {
       setErrorMessage(err.message || 'Login fail ho gaya. Kripya credentials check karein.');
     }
@@ -156,10 +156,14 @@ export const Login = ({ onNavigate }) => {
                 padding: '0.65rem 0.85rem',
                 marginBottom: '1.25rem',
                 fontSize: '0.825rem',
-                fontWeight: '700'
+                fontWeight: '700',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem'
               }}
             >
-              ⚠️ {errorMessage}
+              <AlertTriangle size={16} />
+              <span>{errorMessage}</span>
             </div>
           )}
 
@@ -244,7 +248,7 @@ export const Login = ({ onNavigate }) => {
                 href="/signup"
                 onClick={(e) => {
                   e.preventDefault();
-                  if (onNavigate) onNavigate('/signup');
+                  if (onNavigate) onNavigate(redirectPath ? `/signup?redirect=${encodeURIComponent(redirectPath)}` : '/signup');
                 }}
                 style={{ color: 'var(--color-accent)', fontWeight: '800', textDecoration: 'underline', cursor: 'pointer' }}
               >

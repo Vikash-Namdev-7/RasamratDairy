@@ -56,7 +56,7 @@ export const ProductCard = ({ product, onNavigate }) => {
         style={{
           height: '145px',
           width: '100%',
-          backgroundColor: '#F3ECE1',
+          backgroundColor: 'var(--color-cream-alt)',
           position: 'relative',
           overflow: 'hidden'
         }}
@@ -100,6 +100,7 @@ export const ProductCard = ({ product, onNavigate }) => {
           src={imgSrc}
           onError={handleImageError}
           alt={name}
+          loading="lazy"
           style={{
             width: '100%',
             height: '100%',

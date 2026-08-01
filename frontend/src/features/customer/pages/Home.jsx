@@ -53,8 +53,8 @@ export const Home = ({ onNavigate }) => {
       {/* 1. Modern Premium Hero Banner */}
       <section
         style={{
-          background: 'linear-gradient(135deg, #1C2B4A 0%, #0F172A 100%)',
-          color: '#FFFFFF',
+          background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%)',
+          color: 'var(--color-cream)',
           paddingTop: '2.5rem',
           paddingBottom: '3.5rem',
           position: 'relative',
@@ -71,10 +71,10 @@ export const Home = ({ onNavigate }) => {
             
             {/* Left Content */}
             <div>
-              <span className="badge-gold" style={{ marginBottom: '0.85rem' }}>
-                ✨ 100% Pure Organic Dairy
+              <span className="badge-gold" style={{ marginBottom: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                <Sparkles size={14} color="var(--color-gold)" /> 100% Pure Organic Dairy
               </span>
-              <h1 className="font-display hero-title" style={{ fontWeight: '800', lineHeight: '1.2', marginBottom: '0.85rem', color: '#FFFFFF' }}>
+              <h1 className="font-display hero-title" style={{ fontWeight: '800', lineHeight: '1.2', marginBottom: '0.85rem', color: 'var(--color-cream)' }}>
                 Roz Subah Shuddh <span style={{ color: 'var(--color-gold)' }}>Doodh</span>, Seedha Farm Se.
               </h1>
               <p style={{ fontSize: '0.95rem', color: '#CBD5E1', lineHeight: '1.6', marginBottom: '1.5rem' }}>
